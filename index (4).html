@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crimson Strategist Matcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --crimson: #9B1C1C;
+    --crimson-light: #C0392B;
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --navy: #0F1923;
+    --navy-mid: #1A2A3A;
+    --navy-soft: #243447;
+    --cream: #F5EFE6;
+    --border: rgba(201, 168, 76, 0.2);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--cream); min-height: 100vh; }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .app { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Header */
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .logo { width: 42px; height: 42px; background: var(--crimson); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 22px; color: var(--cream); flex-shrink: 0; }
+  .header-text h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--cream); }
+  .header-text p { font-size: 11px; font-weight: 300; color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 2px; }
+  .header-actions { margin-left: auto; display: flex; gap: 10px; }
+  .icon-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--gold); font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .icon-btn:hover { background: rgba(201,168,76,0.1); }
+
+  /* Availability banner */
+  #availBanner { border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; font-size: 12.5px; display: none; align-items: center; gap: 10px; }
+  #availBanner.ok { background: rgba(139,168,136,0.12); border: 1px solid rgba(139,168,136,0.3); color: #8BA888; display: flex; }
+  #availBanner.warn { background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); color: var(--gold-light); display: flex; }
+  #availBanner.err { background: rgba(155,28,28,0.15); border: 1px solid rgba(155,28,28,0.35); color: #F4A4A4; display: flex; }
+  .banner-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ok .banner-dot { background: #8BA888; }
+  .warn .banner-dot { background: var(--gold); }
+  .err .banner-dot { background: #F4A4A4; }
+  .banner-refresh { margin-left: auto; background: none; border: none; color: inherit; font-size: 11px; cursor: pointer; opacity: 0.7; text-decoration: underline; font-family: 'DM Sans', sans-serif; }
+
+  /* Cards */
+  .card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px; }
+  .card-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 500; color: var(--cream); margin-bottom: 20px; }
+  .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+  .quick-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-group label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-light); opacity: 0.8; }
+  select, input[type="text"], input[type="password"] {
+    background: var(--navy-soft); border: 1px solid rgba(201,168,76,0.15); border-radius: 8px;
+    padding: 10px 14px; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 13px;
+    outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C9A84C' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  select:focus, input:focus { border-color: rgba(201,168,76,0.5); }
+  select option { background: #1A2A3A; }
+  textarea { width: 100%; background: var(--navy-soft); border: 1px solid rgba(201,168,76,0.15); border-radius: 8px; padding: 14px 16px; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 13px; line-height: 1.6; resize: vertical; min-height: 140px; outline: none; transition: border-color 0.2s; }
+  textarea:focus { border-color: rgba(201,168,76,0.5); }
+  textarea::placeholder, input::placeholder { color: rgba(245,239,230,0.3); }
+
+  /* Tags */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(201,168,76,0.2); background: transparent; color: var(--cream); font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+  .tag:hover, .tag.active { background: var(--crimson); border-color: var(--crimson); color: white; }
+
+  /* Tier chips */
+  .tier-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tier-chip { padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; opacity: 0.5; }
+  .tier-chip.active { opacity: 1; }
+  .tier-chip.platinum { border-color: var(--gold); color: var(--gold); }
+  .tier-chip.platinum.active { background: rgba(201,168,76,0.15); }
+  .tier-chip.senior { border-color: #6B9DC1; color: #6B9DC1; }
+  .tier-chip.senior.active { background: rgba(107,157,193,0.15); }
+  .tier-chip.seniorplus { border-color: #9DB4C9; color: #9DB4C9; }
+  .tier-chip.seniorplus.active { background: rgba(107,157,193,0.12); }
+  .tier-chip.standard { border-color: #8BA888; color: #8BA888; }
+  .tier-chip.standard.active { background: rgba(139,168,136,0.15); }
+  .tier-info { font-size: 11px; color: rgba(245,239,230,0.4); line-height: 1.5; }
+
+  /* Submit */
+  .submit-btn { width: 100%; padding: 16px; background: var(--crimson); border: none; border-radius: 10px; color: white; font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .submit-btn:hover:not(:disabled) { background: var(--crimson-light); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(155,28,28,0.4); }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Loading */
+  .loading-state { display: none; text-align: center; padding: 60px 24px; }
+  .loading-state.visible { display: block; }
+  .spinner { width: 40px; height: 40px; border: 2px solid rgba(201,168,76,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--gold-light); opacity: 0.8; }
+
+  /* Results */
+  .results-section { display: none; animation: fadeUp 0.4s ease; }
+  .results-section.visible { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .results-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; }
+  .reset-btn { font-size: 12px; color: var(--gold); background: none; border: 1px solid rgba(201,168,76,0.3); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .reset-btn:hover { background: rgba(201,168,76,0.1); }
+
+  /* Match cards */
+  .match-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; position: relative; overflow: hidden; animation: fadeUp 0.4s ease both; }
+  .match-card:nth-child(2) { animation-delay: 0.05s; }
+  .match-card:nth-child(3) { animation-delay: 0.1s; }
+  .match-card:nth-child(4) { animation-delay: 0.15s; }
+  .match-card:nth-child(5) { animation-delay: 0.2s; }
+  .match-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); }
+  .match-card.rank-2::before { background: #9DB4C9; }
+  .match-card.rank-3::before { background: #8BA888; }
+  .match-card.rank-4::before, .match-card.rank-5::before { background: rgba(245,239,230,0.2); }
+  .match-top { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+  .rank-badge { width: 32px; height: 32px; border-radius: 50%; background: var(--gold); color: var(--navy); font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rank-2 .rank-badge { background: #9DB4C9; }
+  .rank-3 .rank-badge { background: #8BA888; }
+  .rank-4 .rank-badge, .rank-5 .rank-badge { background: rgba(245,239,230,0.2); color: var(--cream); }
+  .match-info { flex: 1; }
+  .match-name { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; margin-bottom: 4px; }
+  .match-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .tier-badge { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; }
+  .tier-badge.platinum { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
+  .tier-badge.seniorplus { background: rgba(107,157,193,0.12); color: #9DB4C9; border: 1px solid rgba(107,157,193,0.25); }
+  .tier-badge.senior { background: rgba(107,157,193,0.15); color: #9DB4C9; border: 1px solid rgba(107,157,193,0.3); }
+  .tier-badge.principal { background: rgba(168,130,107,0.15); color: #C9A07D; border: 1px solid rgba(168,130,107,0.3); }
+  .tier-badge.standard { background: rgba(139,168,136,0.15); color: #8BA888; border: 1px solid rgba(139,168,136,0.3); }
+  .avail-pill { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 500; }
+  .avail-pill.yes { background: rgba(139,168,136,0.15); color: #8BA888; border: 1px solid rgba(139,168,136,0.3); }
+  .avail-pill.limited { background: rgba(201,168,76,0.12); color: var(--gold-light); border: 1px solid rgba(201,168,76,0.3); }
+  .avail-notes { font-size: 11px; color: rgba(245,239,230,0.45); font-style: italic; }
+  .match-rationale { font-size: 13.5px; line-height: 1.65; color: rgba(245,239,230,0.85); margin-bottom: 14px; }
+  .match-strengths { display: flex; flex-wrap: wrap; gap: 6px; }
+  .strength-tag { font-size: 11px; padding: 4px 10px; border-radius: 4px; background: rgba(245,239,230,0.06); border: 1px solid rgba(245,239,230,0.12); color: rgba(245,239,230,0.7); }
+
+  /* Error */
+  .error-box { background: rgba(155,28,28,0.15); border: 1px solid rgba(155,28,28,0.4); border-radius: 8px; padding: 16px 20px; color: #F4A4A4; font-size: 13px; display: none; margin-bottom: 16px; }
+  .error-box.visible { display: block; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(10,18,26,0.85); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.visible { display: flex; }
+  .modal { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 90%; max-width: 560px; animation: fadeUp 0.3s ease; }
+  .modal h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .modal p { font-size: 13px; line-height: 1.6; color: rgba(245,239,230,0.65); margin-bottom: 20px; }
+  .modal p strong { color: var(--gold); font-weight: 500; }
+  .modal .steps { background: var(--navy-soft); border-radius: 8px; padding: 16px; margin-bottom: 20px; font-size: 12.5px; line-height: 1.8; color: rgba(245,239,230,0.7); counter-reset: steps; }
+  .modal .steps li { counter-increment: steps; list-style: none; padding-left: 0; margin-bottom: 4px; }
+  .modal .steps li::before { content: counter(steps) ". "; color: var(--gold); font-weight: 500; }
+  .url-input-row { display: flex; gap: 10px; }
+  .url-input-row input { flex: 1; font-size: 12px; padding: 10px 12px; }
+  .save-btn { padding: 10px 20px; background: var(--crimson); border: none; border-radius: 8px; color: white; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+  .save-btn:hover { background: var(--crimson-light); }
+  .modal-close { background: none; border: none; color: rgba(245,239,230,0.4); font-size: 12px; cursor: pointer; margin-top: 14px; font-family: 'DM Sans', sans-serif; }
+  .modal-close:hover { color: var(--cream); }
+
+  @media (max-width: 600px) { .quick-fields { grid-template-columns: 1fr; } .app { padding: 24px 16px 60px; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">C</div>
+    <div class="header-text">
+      <h1>Strategist Matcher</h1>
+      <p>Crimson Education · North America</p>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="openSettings()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Availability Sheet
+      </button>
+    </div>
+  </header>
+
+  <!-- Availability status banner -->
+  <div id="availBanner">
+    <div class="banner-dot"></div>
+    <span id="availBannerText"></span>
+    <button class="banner-refresh" onclick="loadAvailability()">Refresh</button>
+  </div>
+
+  <!-- Form -->
+  <div id="formSection">
+    <div class="card">
+      <div class="card-title">Student Profile</div>
+      <div class="quick-fields">
+        <div class="field-group">
+          <label>Grade Level</label>
+          <select id="grade">
+            <option value="">Any grade</option>
+            <option>Grade 9 (Freshman)</option>
+            <option>Grade 10 (Sophomore)</option>
+            <option>Grade 11 (Junior)</option>
+            <option>Grade 12 (Senior)</option>
+            <option>Gap Year</option>
+            <option>Transfer Student</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Student Timezone</label>
+          <select id="timezone">
+            <option value="">Not specified</option>
+            <option>EST (East Coast)</option>
+            <option>CST (Central)</option>
+            <option>MST (Mountain)</option>
+            <option>PST (West Coast)</option>
+            <option>International</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:20px">
+        <label>Academic / Career Focus</label>
+        <input type="text" id="focus" placeholder="e.g. Pre-med, Computer Science, Business, Arts…">
+      </div>
+      <div style="margin-bottom:6px"><div class="section-label">Target School Type</div></div>
+      <div class="tag-row" id="schoolTypeTags">
+        <button class="tag" data-val="Ivy League">Ivy League</button>
+        <button class="tag" data-val="MIT/Stanford/Caltech">MIT / Stanford / Caltech</button>
+        <button class="tag" data-val="Top 20">Top 20</button>
+        <button class="tag" data-val="Liberal Arts">Liberal Arts</button>
+        <button class="tag" data-val="UC Schools">UC Schools</button>
+        <button class="tag" data-val="UK (Oxford/Cambridge)">UK</button>
+        <button class="tag" data-val="Canada">Canada</button>
+        <button class="tag" data-val="Business programs">Business Programs</button>
+        <button class="tag" data-val="Arts schools">Arts Schools</button>
+        <button class="tag" data-val="Pre-med/BSMD">Pre-med / BSMD</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Lead Notes</div>
+      <div class="section-label" style="margin-bottom:10px">Paste lead profile, CRM notes, or describe freely</div>
+      <textarea id="leadNotes" placeholder="Paste lead notes here, or describe the student — background, personality, goals, target schools, what kind of counselor style suits them, budget tier, etc.
+
+Example: 'Junior from NYC, wants CS at MIT or Stanford. Very research-oriented, already has a publication. Quiet and analytical, needs someone structured and strong in STEM.'"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Strategist Tier</div>
+      <div class="tier-filters">
+        <div class="tier-chip platinum active" data-tier="PLATINUM">Platinum</div>
+        <div class="tier-chip seniorplus active" data-tier="SENIOR+">Senior+</div>
+        <div class="tier-chip senior active" data-tier="SENIOR">Senior</div>
+        <div class="tier-chip standard active" data-tier="STANDARD">Strategist</div>
+      </div>
+      <div class="tier-info">Unselect tiers to exclude them. All included by default.</div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+    <button class="submit-btn" onclick="findMatches()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Find Best Strategist Matches
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" id="loadingState">
+    <div class="spinner"></div>
+    <div class="loading-text">Analyzing strategist profiles…</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <h2>Top Matches</h2>
+      <button class="reset-btn" onclick="resetForm()">← New Search</button>
+    </div>
+    <div id="matchCards"></div>
+  </div>
+
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>Settings</h3>
+    <p>Enter your Anthropic API key once — it's saved in your browser and never shared. Then connect your availability Google Sheet.</p>
+    <ol class="steps">
+      <li>Make a copy of the <strong>Crimson Availability Sheet template</strong> (link sent separately)</li>
+      <li>In Google Sheets: <strong>File → Share → Publish to web</strong></li>
+      <li>Set format to <strong>CSV</strong>, select the <em>Availability</em> tab, click Publish</li>
+      <li>Copy the URL and paste it below</li>
+    </ol>
+    <div style="margin-bottom:20px">
+    <div class="section-label" style="margin-bottom:8px">Anthropic API Key</div>
+    <div class="url-input-row">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-...">
+      <button class="save-btn" onclick="saveApiKey()">Save</button>
+    </div>
+    <div id="apiKeySaveMsg" style="font-size:12px;margin-top:8px;color:#8BA888;display:none">✓ API key saved.</div>
+  </div>
+  <div class="section-label" style="margin-bottom:8px">Availability Sheet</div>
+  <div class="url-input-row">
+      <input type="text" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/.../pub?...output=csv">
+      <button class="save-btn" onclick="saveSheetUrl()">Save</button>
+    </div>
+    <div id="sheetSaveMsg" style="font-size:12px;margin-top:10px;color:#8BA888;display:none">✓ Sheet URL saved. Fetching availability…</div>
+    <br>
+    <button class="modal-close" onclick="closeSettings()">Close</button>
+  </div>
+</div>
+
+<script>
+// ── Counselor data ──────────────────────────────────────────────────────────
+const COUNSELORS = [{"name":"Eli","full_name":"Eli Epstein-Deutsch","tier":"PLATINUM STRATEGIST","bio":"Eli is a graduate of both Swarthmore College (undergraduate degree with high honors) and Yale University and has 15 years of experience in the college admissions consulting space.\n\nOver this period, Eli has helped hundreds of students gain admission to the best academic programs in the US, his students going on to attend Harvard, Yale, Princeton, Stanford, MIT, Brown, UChicago, Duke, UPenn, Cornell, NYU Stern, RISD, Brown PLME (dual degree medicine program) and many others. \n\nAside from undergraduate programs, he has also coached students in their admissions journey to attend competitive high schools and graduate programs. His middle school students have secured acceptance to prestigious private high schools such as Phillips Exeter Academy, Lawrenceville School, Milton Academy, and Columbia Grammar and Preparatory School, while his undergraduate students have gained entry to top-tier programs that include Columbia Business School, Johns Hopkins Medical School, and the UPenn Art History PhD program. 95% of his over 300 students have been accepted to reach schools and many have secured competitive summer program acceptances to programs like Wharton\u2019s M&T Summer Institute, Yale Young Global Scholars, Summer Science Program, UCSB\u2019s Research Mentorship Program and more. His students have also gone on to win international accolades in iGEM and the Conrad Challenge.\n\nAside from college counseling, Eli has been an arts writer, editor and curator since college, when he founded a widely-read journal at Swarthmore, wrote reviews for the arts section of Village Voice in New York City, and worked as an assistant editor for Yale\u2019s Theater Magazine.\n\nAfter helping organize the live arts biennial PERFORMA 17, he founded a nonprofit that has developed immersive live events at NYC venues"},{"name":"Rebecca","full_name":"Rebecca Joseph","tier":"PLATINUM STRATEGIST","bio":"With more than 25 years of college admissions experience, Dr. Rebecca Joseph believes all students deserve the highest quality college education possible. A Harvard graduate, Rebecca has guided hundreds of students from across the world to their match colleges in the United States, Canada, and the UK.\n\nBased in Southern California, Rebecca graduated from Harvard University, received her PhD from UCLA, and completed her college counseling certificate at UCLA Extension.\n\nRebecca loves the entire college readiness and application process. She enjoys helping students develop and share their passions, talents, and accomplishments with colleges. She knows that this empowering process helps students not only get admitted but also thrive in college. \n\nIn addition to her work as an independent college counselor, Rebecca has been a full professor at a top California university and has dedicated her time outside of the classroom to helping students and their families learn about college readiness and success. Due to her extraordinary commitment to service in education, she was named an Unsung Hero of LA County in 2016. \n\nRebecca\u2019s students have matriculated to a wide range of universities, including Stanford, Harvard, Yale, Princeton, University of California, Berkeley, UCLA, University of Southern California, University of Pennsylvania, Columbia University, Brown, Georgetown, George Washington, New York University, Cornell University, University of Michigan, Dartmouth, Emory, Vanderbilt, Pomona, Scripps, Oberlin, Syracuse, USCB, McGill, UBC, Johns Hopkins, Boston University, Northeastern, and more. 100% of her students have been admitted to reach schools and several have received competitive distinctions including top 10 distinctions in the Lincoln-Douglas Debate competition (nat"},{"name":"Ibrahim","full_name":"Ibrahim Kamal","tier":"PLATINUM STRATEGIST","bio":"Ibrahim is a graduate of both the University of Chicago (undergraduate degree) and Harvard University (graduate degree). He has been working as a full-time professional college admissions coach/consultant for over 10 years.\n\nHe has supported hundreds in gaining admission to the best schools in the USA including Harvard, Yale, Princeton, Brown, UChicago, Cornell, Berkeley, Stanford, MIT, USC, and more across various disciplines like Biology, Environmental Science, Political Science, Public Policy, English Literature, Bioengineering, Electrical Engineering, Journalism, and Urban Planning.\n\nIbrahim has extensive experience working with high school students applying to top-tier undergraduate programs, providing comprehensive guidance that ranges from application strategies (selecting schools, majors, finding recommenders, etc.) to personal statements (brainstorming, outlining, writing, and editing) to filling out the actual application itself (including explaining extra-curricular activities, drafting diversity/adversity statements, etc.) and post-application services such as letters of interest for waitlisted students, scholarship and financial aid applications. \n\nHis expertise lies in helping students craft competitive narratives that are genuine to their interests, allowing them to express themselves more authentically in their application process. As a trusted partner throughout the process, Ibrahim describes his approach as comprehensive, as he guides his clients through a step-by-step process of crafting an authentic narrative that stands out and conveys their life experiences through a unique and compelling story.\n\nMAJOR-BASED RESULTS (internal unless requested)\nBrown: Environmental Science\nHarvard: Political Science\nYale: Political Science\nColumbia: Political Scienc"},{"name":"Sarah","full_name":"Sarah Tierney","tier":"PLATINUM STRATEGIST","bio":"Based in Buffalo, New York, Sarah graduated magna cum laude from Harvard College, where she majored in English and American Literature and Language, while concurrently enrolled at the New England Conservatory of Music, studying bassoon performance. She earned a Master of Management degree from Northwestern University\u2019s Kellogg School of Management, concentrating in marketing, management strategy, and organizational behavior.\n\nSarah has twenty-six years of experience in college admissions, having worked for sixteen years as an alumni interviewer for her alma mater, Harvard College (collaborating closely with the Harvard Office of Undergraduate Admissions) and an admissions reader for Northwestern University\u2019s Office of Undergraduate Admissions. At Northwestern, Sarah evaluated hundreds of applications, making admission recommendations, and from 2001 to 2007, she consulted to the admissions offices of schools such as the University of Pennsylvania and the University of Virginia, helping them to develop their recruitment strategies and admissions materials.\n\nSarah has used her two decades plus of admissions experience to help hundreds of students gain acceptance to every Ivy League university, as well as to Stanford, MIT, Duke, Georgetown, the University of North Carolina at Chapel Hill, Carnegie Mellon, Washington University in St. Louis, UCLA, UC Berkeley, the University of Southern California, the University of Virginia, the University of Michigan Ann Arbor, Oxford, and Cambridge. In the 2024-2025 admissions cycle, 100% of her students were accepted to at least one \u201cReach\u201d school, while 93% were admitted to a \u201cHard Reach\u201d institution. In the 2023-2024 admissions cycle, 75% of her students were admitted to an Ivy League university and/or Stanford, MIT, Duke, Georgetown, "},{"name":"Dana","full_name":"Dana Crum","tier":"PLATINUM STRATEGIST","bio":"Dana is a graduate of Princeton University and a seasoned admissions counselor. In addition to appraising applications in Princeton University's Office of Undergraduate Admission, he has spent over ten years as an admissions consultant, helping both domestic and international students gain admittance to selective colleges in the U.S., the UK and Canada, including Harvard, Columbia, Princeton, Stanford, Caltech, UChicago, the University of Pennsylvania, Brown, Cornell, Duke, Babson, UNC, Northwestern, Johns Hopkins, Vanderbilt, Georgetown, Carnegie Mellon, UC Berkeley, UCLA, USC, Case Western, University of Michigan (including Ross School of Business), University of North Carolina Chapel Hill, Wellesley College, Oxford, Imperial College London and University College London. \n\nKey to this success is his comprehensive experience as an educator, which informs his holistic approach to admissions consulting. He was an English teacher at Horace Mann School, in New York City, where he did more than prepare teenagers for college. He also advocated for his students in recommendation letters, critiqued their college essays, and served as an academic adviser to students in grades 9 through 12. \n\nThrough these efforts he helped his students stand out in the selective applicant pools at their dream schools, drawing on his own successful application to Princeton, where he graduated with honors. These experiences, along with his achievements as a professional editor and award-winning writer, deepened his expertise in empowering students to produce strategic, cohesive applications complete with compelling essays that embed themselves in the Admissions Officer\u2019s mind.\n\nAmong the other characteristics that define his holistic approach to admissions consulting is his emphasis on helping st"},{"name":"Alex","full_name":"Alex Ohanyan","tier":"PLATINUM STRATEGIST","bio":"EST only\n\n  \n\nAlex graduated from Harvard College with an AB in Romance Languages and Literatures, where he focused on linguistics, as well as mathematics and music. As an applicant, he was admitted to every Ivy League school as well as MIT and Stanford. \n\nAlex has also completed graduate coursework at Columbia University where he undertook post-baccalaureate courses in Honors Mathematics and Statistics. He further holds a Certificate in Finance from New York University.\n\nAlex has over 10 years experience in the college admissions consulting space, having guided hundreds of students on academic and extracurricular and successfully supporting his students in gaining admission to Harvard, Yale, Princeton, Columbia, Stanford, UPenn, Brown, UChicago, Hopkins, Cornell, Dartmouth, MIT, Northwestern, NYU Stern as well as Oxford and Cambridge. These results also include successful admission to highly competitive majors and programs such as BSMD.\n\nA veteran editor and wordsmith, fluent in 6 languages, prior to his consulting career, Alex was a professional editor  working under then US Ambassador to the UN, Madeleine Albright, at the State Department in the Political Section of the US Mission to the United Nations \u2014 editing translating, and drafting official correspondence and memoranda, as well as speechwriting for Ambassador Albright. \n\nWhile at Harvard, Alex was a DJ for WHRB and worked as a pro-bono tutor and mentor. After Harvard, Alex worked as product and project manager at Artstor/Ithaka/Jstor, where he co-created Artstor Mobile, and PM\u2019d the Artstor Digital Library and JSTOR Forum, a media management platform of 13 million + assets used by the world's leading academic/cultural heritage institutions including Harvard, Yale, Cornell, The Met Museum, et al. while building "},{"name":"Yanni","full_name":"Yanni Mohabir","tier":"PLATINUM STRATEGIST","bio":"EST only\n\n  \n\nYanni graduated from Dartmouth College with a degree in computer science and later earned her MBA from the Harvard Business School.  \n\nShe had been traversing a traditional career path in venture capital, with a focus on mission-driven consumer products, when she found her calling in social entrepreneurial agriculture in a small country on the tip of South America called Guyana.  \n\nIn the last decade, Yanni and her partner (in life and work) built Plympton Farms into the largest grower/processor of Caribbean chili peppers and the largest greenhouse vegetable grower in the region.  However, Yanni is most proud of the economic opportunities they have created for indigenous communities and smallholder farmers. \n\nWhile in Guyana, Yanni also deepened her admissions interview involvement with Dartmouth, eventually becoming the District Enrollment Director. Having led the coordination and follow up of over 1,000 admission interviews, Yanni leverages her admissions acumen and multifaceted career path to help students develop and execute a long-term vision for their high school career leading to a compelling admissions profile. \n\nYanni\u2019s Crimson students have successfully gained admission to Harvard, MIT, Stanford, Yale, Cornell, the University of Pennsylvania, Georgetown, Columbia, Duke, Johns Hopkins, Georgia Tech, Vanderbilt, Washington University in St Louis, the University of Michigan Ann Arbor, University of Southern California, UCLA, UC Berkeley, the University of North Carolina Chapel Hill, the University of Virginia, New York University including NYU Stern and many more.\n\nYanni has also successfully supported students to some of the most selective summer programs in the US including MIT\u2019s Research Science Institute (RSI) and Beaver Works Science Institute "},{"name":"Erin","full_name":"Erin Cao","tier":"SENIOR+ STRATEGIST","bio":"Erin completed her undergraduate degree at Columbia University, where she graduated with a B.A. in Art History and a concentration in East Asian Studies. At Columbia, she was actively involved with the Admissions Office as a student interviewer and tour guide. \n\nErin is also a Former Admissions Officer at Columbia University. As an Admissions Officer at her alma mater, she read thousands of applications for both Columbia College and the School of Engineering and Applied Sciences for her main territories in the US, Canada, and China. \n\nAfter leaving Columbia, Erin decided to share the unique knowledge and insights she gained about the college admissions process by helping students with their college applications.  As an admissions consultant, she has helped students gain admission to Harvard, Yale, MIT, Columbia, UPenn, Brown, Cornell, Georgetown, Vanderbilt, UChicago, UCLA, UC Berkeley, the University of Southern California, NYU, Emory, Tufts, University of Michigan, University of Virginia, Boston College, Georgia Tech, Berklee College of Music, Parsons School of Design and more. \n\nErin believes that all students have a unique narrative that they bring to the table. She loves having exploratory conversations with students about their academic and extracurricular interests, identities, and lived experiences, in order to pinpoint the exciting and unique things that they can bring into their essays. Her focus is on helping students craft their own narrative so they can put their best selves forward in their applications. \n\nPERSONAL\n\nErin is currently based in Atlanta, Georgia and spends her free time performing music and volunteering with organizations that hold a special place in her heart, including the Red Cross and Zoo Atlanta. She also spends a lot of time taking care"},{"name":"Andrew","full_name":"Andrew Hazen","tier":"SENIOR+ STRATEGIST","bio":"Andrew is a double graduate of Northwestern University having completed both his undergraduate and Masters Degree (MA Healthcare, Communication Sciences and Disorders) at the top 10 university.\n\nHe further worked as an Admissions Officer at Northwestern in a team that evaluated over 40,000 applicants.\n\nHe has worked in the college admissions space for over 7 years, helping dozens of students achieve success in their college search process. His greatest successes lie in empowering students during this effort, providing them the guidance needed to build the necessary skills to both overcome the college search process and excel in any future academic environment. \n\nStudents working with Andrew have gained admission to the top schools in North America including Princeton, Yale, Johns Hopkins, Columbia, University of Pennsylvania, University of Chicago, Dartmouth, Cornell, Northwestern, all UC institutions including UCLA and Berkeley, University of Michigan, Washington University, Georgetown, University of Virginia, University of North Carolina-Chapel Hill, University of Southern California, New York University, Emory, and many more across disciplines from STEM to the social sciences. \n\nAndrew\u2019s comprehensive guidance for high school students elevates the best aspects each candidate offers for consideration. Understanding the methodology of the complicated application process as well as school-specific values and criteria affords his students the best possible candidacy in the highly competitive admissions landscape. Applying strategy to student resumes and presentation, thoughtful choice for areas of study and school-specific program offerings, as well as creative and well-developed essay writing all lead to students sharing \u201cthe best versions of themselves\u201d for evaluation."},{"name":"Quincy","full_name":"Quincy Jones","tier":"SENIOR+ STRATEGIST","bio":"Avail till 6pm PST\n\n  \n\nQuincy has an impressive record in top college admissions having acted as the Assistant Director of Admissions at his alma mater UC Berkeley\u2019s Office of Undergraduate Admissions for over 9 years. \n\nAs a part of his role at UC Berkeley, Quincy served as one of the lead application readers and leveraged his detailed knowledge of holistic evaluation to shape and facilitate Berkeley\u2019s reader training on an annual basis. This in-depth understanding of highly selective admissions for both first year and transfer applicants has helped him to become an adept guide for students and families on the ins and outs of the admissions process in his current role as a strategist. \n\nBeyond the above, Quincy has also spent the past 4 years as an admissions consultant and is passionate about helping his students cultivate a strong and intentional narrative that helps to differentiate them from their peers both when building their profiles as younger students and in completing their applications as juniors and seniors. \n\nHe has supported students in gaining admissions to multiple top universities across the country such as MIT, Stanford, Columbia, Northwestern, USC, the University of Michigan, New York University, the University of Chicago, Georgia Tech, the University of Texas Austin and all 9 UC campuses - just to name a few.\n\nPERSONAL\nOutside of work Quincy is an avid sports fan and film lover who recently completed writing his first original screenplay!\n\nMAJOR-BASED RESULTS\nMIT: Computer Science\nStanford: Human Biology\nUCLA: Film, Neuroscience, Psychology\nUCB: Business, Electrical Engineering & Computer Science, Environmental Sciences, Anthropology, Architecture \nUCSD: Cognitive Science, Computer Science, Economics\nNorthwestern: Journalism\nUChicago: Political Sci"},{"name":"Kaireth","full_name":"Kaireth (Kai)","tier":"SENIOR+ STRATEGIST","bio":"Kaireth, is a dynamic and results-driven Principal Strategist renowned for his expertise in the field of private education and college consulting. He obtained a scholarship to attend Middlebury College where he excelled in rigorous STEM coursework. \n\nPreceding his college years, Kaireth devoted two years to serving as a conscientious director for SAT, ACT, and AP programs, concurrently fulfilling the role of a college consultant. Throughout his academic tenure, Kaireth sustained his commitment to the private education sector, shuttling between South Korea and the US to assist aspiring students in pursuing international studies. \n\nDriven by an unwavering passion for the field, he seamlessly transitioned into college consulting post-graduation, steering over two hundred students to secure admissions to esteemed institutions globally, including but not limited to Caltech, Yale, MIT, Stanford, Harvard, Columbia, University of Pennsylvania (M&T), Brown, Johns Hopkins, Dartmouth, Cornell, Duke, Georgetown, Northwestern, UCLA, UC Berkeley, UC San Diego, UChicago, University of Michigan Ann Arbor, and Vanderbilt.\n\nIn the realm of consulting at Crimson, Kaireth has orchestrated admission workshops for premier Computer Science and business/Economics programs, Digital SAT, and international students seeking financial aid. His expertise extends to formulating and executing capstone projects for top-tier STEM students, alongside crafting internal transfer strategies rooted in acute admission insights. \n\nNoteworthy capstone examples include founding multiple STEM NGOs focusing on physics and computer science education for marginalized populations, establishing a competition platform for business cases, and initiating an art-box project for young adults with cancer. \n\nWith a distincti"},{"name":"Dakota","full_name":"Dakota Bowman","tier":"SENIOR+ STRATEGIST","bio":"Dakota is a proud alumnus of the University of Chicago, where he began his career in education as part of the university\u2019s inaugural College Advising Corps cohort. In this role, he supported hundreds of under-resourced and underrepresented students across Chicago Public Schools, guiding them through every stage of the college application process with empathy, strategy, and deep institutional knowledge.\nAfter his impactful work in Chicago, Dakota moved to Beijing, where he served as an Education Consultant helping students apply to top universities around the world. There, he built a reputation for helping students achieve extraordinary results\u2014often reaching schools and programs that once felt out of reach. He brings that same level of dedication, insight, and creativity to his work at Crimson.\nWhile Dakota supports students across a wide range of interests, he is particularly experienced in helping applicants stand out in highly competitive STEM fields. His students have earned admission to top-tier programs in computer science, biomedical and mechanical engineering, neuroscience, economics, and data science at institutions such as Stanford, UC Berkeley, Johns Hopkins, Rice, Cornell, and others. At the same time, he continues to help students find success in business, public policy, and the humanities, making him a versatile and deeply trusted advisor across disciplines. Over the years, Dakota\u2019s students have earned admission to top US schools including MIT, Yale, Stanford, Columbia, Duke, UChicago, Cornell, UPenn, Vanderbilt, UC Berkeley,  UCLA, Rice, Johns Hopkins, UT Austin, UNC Chapel Hill, UMichigan, University of Southern California (USC), University of Virginia, Georgia Tech, Pomona, Georgetown, Claremont McKenna, New York University (NYU) and more!\nDakota\u2019s spe"},{"name":"Marivi","full_name":"Marivi Lerdo","tier":"SENIOR+ STRATEGIST","bio":"Based in the Bay Area, Marivi is a graduate of Brown University. She has 8 years experience in college admissions support having guided students to gain admission to the top colleges in the US as well as the top independent boarding and day schools and most competitive summer programs.\n\nMarivi is the co-founder of the College Counseling Collective, a private network of educational consultants and college counselors who were part of the UC Berkeley certificate program in college counseling.\n\nAlongside her almost decade-long career in college admissions counseling, Marivi also has a long history in corporate communications and public relations, including as SVP at Edelman Worldwide and as VP of Global Communications and PR at such companies as Nielsen and Dolby.  In these roles Marivi enjoyed helping companies identify what made them special and then crafting the key messages and narratives most likely to advance their goals and persuade stakeholders. \n\nShe has been combining those same strategic skills with her in-depth knowledge of the US education landscape to support her students in successfully gaining admission to a wide range of institutions, including MIT, Stanford, Johns Hopkins, Emory, UC Berkeley, UCLA, Pomona College, Wellesley, Carleton, Haverford and Barnard.\n\nOn the independent high school and boarding school admissions space, Marivi has worked with students to successfully gain admissions to schools such as Thacher, Cate, Berkshire, Emma Willard, Middlesex, St. Andrews DE, Urban, Lick-Wilmerding, University High School, Bay School, St. Ignatius and Nueva. \n\nHer goal when working with families and students is to transform what could be a stressful process into a powerful journey of self reflection and self improvement that lands the student at the instituti"},{"name":"Camille","full_name":"Camille Green","tier":"SENIOR+ STRATEGIST","bio":"Camille graduated from the University of Pennsylvania and has spent almost 7 years at UPenn\u2019s Undergraduate admission office in various roles targeting students from historically underrepresented backgrounds. She has also been a UPenn interviewer for over 7 years.\n\nAdditionally, she worked at the Common Application for 3 years as the account manager for 50 US and International Colleges and Universities including  Princeton, Columbia, Dartmouth, Yale, Yale-NUS, Northwestern Qatar, and American Universities of Paris to name a few. Further, for the past 6 years, Camille has worked in both graduate admissions and the undergraduate admissions offices of George Washington University (most recently as Senior Assistant Director Of Admissions) reviewing over 27,000 applications. \n\nIn her roles, Camille has always reviewed applications, presented to committee, and advocated for students in line with the value they will bring to their academic communities. What Camille enjoys most about her career in higher education is working with students, she has always found time to inspire her students and build their confidence as they navigate the complex college application processes. \n\nStudents whom Camille has worked with have been accepted to Harvard, Princeton, Stanford, UPenn, Brown, Cornell, Johns Hopkins, Duke, Rice, UCLA, the University of Virginia, the University of Southern California, U Michigan, George Washington University and liberal arts colleges such as Pomona, Wellesley and Claremont McKenna. She is also an expert in competitive summer program applications having supported her students in gaining admission to competitive pre-college summer programs including those held by John Locke Summer Symposium, UPenn (LBW, ESAS), Brown Pre-College, Johns Hopkins Pre-College, UC Berk"},{"name":"Janela","full_name":"Janela Harris","tier":"SENIOR+ STRATEGIST","bio":"No PST\n\n  \n\nJanela is a Former Admission Officer at her alma mater, Haverford College, where she earned her BA in Cultural Anthropology. While at Haverford, she was involved in many facets of student leadership, including as an Upper Class Advisor in the year-long first-year orientation program, Co-Secretary of Honor Council, and Student Consultant for the Bi-College Teaching & Learning Institute.\n\nJanela began working in college admissions as an interviewer during her senior year, before joining the Haverford Admission Office full-time. For seven years Janela carried out the responsibilities that come with reading thousands of applications and selecting the final members of each incoming class, before being promoted to Assistant Director of Admission.\n\nAfter moving to Portland, Oregon Janela transitioned to medical school admissions. In addition to regular graduate school admission work, Janela initiated diversity recruitment and accepted an invitation to serve on the University Council for Diversity and Inclusion.\nSince joining Crimson, she has worked with over 100 students. Janela has experience supporting students in fields like engineering, law, pre-med, and architecture. Her students have been admitted to Harvard, MIT, Yale, Princeton, Stanford, UPenn, Columbia, Duke, UChicago, Berkeley, UCLA, NYU, Johns Hopkins, Brown (RISD Dual Degree), CMU, Caltech, Dartmouth, Emory, Northwestern, Rice, UC Berkeley, University of Southern California (USC), University of Michigan, Vanderbilt, WashU, and many more. Her students have notably received highly selective scholarships like the Cameron Impact Scholarship which awards a full ride to 10-15 students across the US.\n\nMAJOR-BASED RESULTS (internal unless requested)\n\nHopkins: Biomedical Engineering\nUPenn: Science Tech & Societ"},{"name":"Aman","full_name":"Aman Dang","tier":"SENIOR+ STRATEGIST","bio":"Based in Vancouver, Canada, Aman is a graduate of Harvard University. \n\nHe began his career as an Admissions Officer at MIT and over the past 13 years, he has helped his students gain acceptance to the world\u2019s most selective universities including MIT, Stanford, Yale, UPenn, Columbia, Cornell, UChicago, Dartmouth, Duke, Northwestern, NYU, Johns Hopkins, Vanderbilt, USC, Rice, Tufts, Washington University in St. Louis, Emory, Rhode Island School of Design (RISD), Pomona College, Barnard College and many more across a variety of disciplines from STEM to the social sciences. \n\nDuring his time working in the Admissions Office of MIT, Aman saw firsthand both the exceptionally high standards at top universities and the inherent subjectivity of the admissions process. Even at MIT, which strives to be as scientific as possible, admissions is more of an art than a science. Most families intuitively understand that top-tier admissions require more than just strong grades and test scores. However, they often struggle to identify the kinds of achievements that genuinely set students apart. Channeling his expertise, Aman is able to help students identify which of their achievements would be strategic to highlight. \n\nAman also has experience working with competitive students from top private schools as a school counsellor. He has also worked with many students with Asian backgrounds and is aware of the highly competitive nature of international student applications to top US colleges. \n\nAman\u2019s insight into highly selective admissions translates into his ability to craft compelling application components that help students rise to the top of the admissions pool. His approach to mentorship helps students cultivate a proactive approach and mindset towards their future education which is"},{"name":"Logan","full_name":"Logan Klutse","tier":"SENIOR STRATEGIST","bio":"Logan is a graduate of Yale University where he double-majored in English with a concentration in Creative Writing and Theater Studies. \n\nDuring his time at Yale, he was conferred distinction in the English major, studied with Pulitzer-winning professors and one-on-one with a Nobel laureate, and won 8 Yale prizes for his writing, making him both the most awarded member of his graduating class as well as the most awarded Yale undergraduate of the decade. Logan uses those same multi-genre narrative skills to help each student craft college essays that pay meticulous attention to sound, sentence structure, creative technique, and the authenticity of their unique story. In his final year at Yale, Logan was also awarded the Gordon Grand Fellowship \u2014 given to \u201ca member of the graduating class whose proven character and personal capacity to contribute to the lives of others.\u201d \n\nLogan has chosen to do so in the field of education supporting students in their journey to top college admission \u2014 a decision spurred by his work at Yale\u2019s Office of Undergraduate Admissions where he worked as a Recruitment Coordinator. While at the Yale Undergraduate Admissions Office, Logan was the student head of the Likely Students Team, mentoring high-achieving incoming students on their college choices, as well as advising prospective candidates about application strategies during student forums.\n\nAs a college counselor, Logan adopts a \u201cnurturing tactician\u201d and \u201ctask-driven cheerleader\u201d approach in the admissions process: emphasizing mentorship that is encouraging and affirming, while still data-driven and focused on collaborative and measurable monthly progress. Logan prides himself on providing both tailored, personalized recommendations as well as long-term vision for the development of the en"},{"name":"Christine","full_name":"Christine Greb","tier":"SENIOR STRATEGIST","bio":"Having graduated from UPenn with their Masters in Education Administration, Christine\u2019s career in higher education has led her to work with almost 100 students to craft their unique stories and help them gain admission to Columbia, Yale, Princeton, University of Pennsylvania, Cornell, MIT, Duke, Barnard, WashU, NYU, Case Western, Notre Dame, University of California (various campuses) and more. One of her students received a full-ride scholarship to their top college choice. \n\nChristine\u2019s admissions experience has taken her through multiple levels of admissions including her position as Dean of Enrollment Management at Philadelphia University (now Thomas Jefferson University). She has developed a deep appreciation for shaping a class that prioritizes community-minded intellectuals that are invested in interdisciplinary learning. Her students benefit from this perspective as she helps them understand how to communicate their multidimensional personality in a short amount of space on their application.\n\nChristine served as a Seasonal Reviewer for Johns Hopkins University, reading the stories of thousands of STEM undergraduate applicants (freshman and transfer). Her experience has informed the ways in which she partners with students and families to navigate the complexity of the college admissions process, focusing on fit and defining their intention, or \u201cWhy?\u201d. Balancing student agency with direct feedback and accountability, she helps students reach their highest potential while maintaining a realistic, grounded point of view given the competitive admissions landscape.\n\nMAJOR-BASED RESULTS (internal unless requested)\n\nColumbia: Columbia College - Neuroscience and Behavior\nHarvard: Biomedical Engineering\nCornell\nYale: Neuroscience\nPrinceton: Neuroscience\nUPenn: College o"},{"name":"Jermaine","full_name":"Jermaine Doris","tier":"SENIOR STRATEGIST","bio":"Jermaine is a Former Senior Admissions Officer from Columbia University with a warm, direct, and narrative-driven counseling style. \n\nDuring his extensive career in education, he has also held positions at Yale (Yale Schwarzman Center) and Johns Hopkins (as the Admissions Program Coordinator for JHU\u2019s Paul H. Nitze School of Advanced Studies). \n\nJermaine\u2019s greatest strength is decoding elite admissions expectations into sustainable and critical guidance. He takes pride in his strong organizational skills, inspired essay guidance, informed academic planning/advising, and endlessly creative capstone support. He diligently leads students through the application with deep self-reflection and firm course correction that never loses sight of even the boldest school acceptance goals. These experiences and his multiple years as a top college admissions counsellor have seen him call on his extensive Ivy League insights to lead many determined students to acceptances at Princeton, Yale, Columbia, Duke, the University of Southern California (B&CA), UCLA, UC Berkeley, Vanderbilt, Northwestern, U. Chicago, Johns Hopkins, Brown, Northeastern, and many, many more.  \n\nOnce again, given his extensive experience, Jermaine\u2019s admissions insights have been quoted in US News & World Report, and he has constructed and led many insightful live events on elite admissions consulting strategies for families across the country.\n\nMAJOR-BASED RESULTS (internal unless requested):\n\nPrinceton University: History\nBrown: PLME\nYale University: History of Science & Medicine\nColumbia University: Biomedical Engineering\nUchicago: Philosophy\nUCLA: Film and Television\nUC Berkeley: Business Administration (Haas)\nDuke University: Economics\nJohns Hopkins University: Public Health Studies\nNortheastern: Business Adm"},{"name":"Emma","full_name":"Emma Ohland","tier":"SENIOR STRATEGIST","bio":"(can take OOR - ANZ/UK) \n   \n\nEmma graduated from Purdue University with a degree in English Literature and Communications. She then worked as an Assistant Director of Admissions at Purdue for several years and has over 5 years of experience as a college consultant. \n\nEmma has made decisions on 5,000+ student applications across multiple majors. As an admissions committee member she assessed applications focusing on pre-med, computer science, and engineering as well as humanities based majors helping the university to build a strong, and successful cohort. \n \nEmma worked as a writing tutor in the Purdue Writing Lab (Purdue OWL) before her transition to admissions, and is an award-winning published author of young adult novels. She has taught creative writing courses as well as tutored in English and literacy. She uses both experiences to help students craft compelling narratives for their applications.\n \nEmma has a track record of student admittances including but not limited to: Stanford, MIT, CalTech, UPenn, Columbia, University of Chicago, Northwestern, UC Berkeley, UCLA, USC, NYU, Georgia Tech, UMichigan, Purdue, Indiana University, UNC Chapel Hill, UT Austin, Middlebury College, Syracuse University, and Rutgers SAS-Newark BA/MD Program.\n\nWhen working with families, she believes in strong communication between parent, student, and counselor. She is both a cheerleader and a highly experienced coach: celebrating her students\u2019 successes and motivating them to always reach higher and accomplish their goals.\n \nMAJOR-BASED RESULTS (internal unless requested)\nStanford: Computer Science\nPurdue: Engineering, Business, Computer Science\nRutgers: BA/MD Program\nColumbia: Computer Science, Neuroscience\nUCs including Berkeley and UCLA: Engineering, Applied Mathematics, Business, E"},{"name":"Krysten","full_name":"Krysten Fernandez","tier":"SENIOR STRATEGIST","bio":"EST preferred\n\n  \n\nKrysten grew up in Boston, MA but has made the Bay Area her second home. She graduated with a BA degree from Williams College and a Masters in Theological Studies from Harvard University. \n\nWith ten years experience as a college counselor, Krysten has guided students with a range of academic and career interests. Her students have earned admission to top-tier institutions, including Harvard, Yale, Princeton, UPenn, Columbia, Brown, Cornell, Swarthmore, Carnegie Mellon, UC Berkeley, UCLA and more across STEM and humanities disciplines.\n\nKrysten is a passionate counselor and emphasizes a holistic, student-driven process. In addition to her counseling, Krysten has extensive curriculum design, teaching and mentoring experience. She worked in two public high schools in Massachusetts, as an adjunct professor at Endicott College (teaching Urban Sociology and Cultural Psychology), and for an educational non-profit serving high school students in 5 major cities.\n\nThese experiences shaped how Krysten approaches college counseling. She centers students\u2019 voices, outlines clear action steps and timelines to keep students on track. \n\nKrysten\u2019s advising strengths lie in helping students\u2019 identify and craft their unique story through their college essays, helping them stand out among applicants to highly selective schools. \n\nPERSONAL\nWhen Krysten is not counseling students, she enjoys reading science fiction, watching basketball and spending time outside with community. \n\nMAJOR-BASED RESULTS (internal unless requested)\nBrown University: Environmental Science \nCornell University: Art \nColumbia University: Industrial Engineering\nHarvard University: Biology  \nPrinceton University: Computer Science \nUniversity of Pennsylvania: Engineering \nYale University: Biology  \nUC B"},{"name":"Raymond","full_name":"Raymond Firmalino","tier":"SENIOR STRATEGIST","bio":"Ray holds a Bachelor of Arts in Psychology from UC Berkeley, a Master\u2019s of Science in International Social Work from Columbia, and a Master\u2019s in Education from Harvard. He has over a decade of teaching and college counseling experience and has held administrative roles at Harvard, Columbia, and the University of California, Berkeley.  \n\nFrom extracurricular building to summer program support, essay perfection to strategic college list construction, Ray provides comprehensive, detailed, and highly individualized application support, his north star being helping his students develop world-class, memorable, successful applications. His counseling style is warm yet rigorous, meticulous yet flexible, and focused yet holistic. \n\nRay believes that young people deserve someone in their life to help them identify and hone their curiosities and passions, building skills that not only lead to successful top college applications, but also opportunities to use their education to grow into successful adults and serve society in their own unique ways. As such, Ray sees himself as a mentor/life coach, on top of a passionate admissions consultant. \n\nHis determination to help his students develop a stronger sense of self is a key ingredient to his success as a mentor, his students gaining admission to Princeton, MIT, University of Pennsylvania, Cornell, Brown, UC Berkeley, UCLA, Johns Hopkins, Northwestern, Georgetown, University of Michigan, Purdue, CMU, UCSD, NYU, USC, Emory and many more.\n\nPERSONAL\n\nRay grew up in Los Angeles, California. He has lived in Geneva, Switzerland, where he served as a Duke Humanitarian Action Fellow at the World Health Organization. He has also worked on human rights policy at the United Nations. Ray\u2019s multi-faceted experiences have given him an interdiscip"},{"name":"David","full_name":"David Ehmcke","tier":"SENIOR STRATEGIST","bio":"EST preferred\n\n  \n\nBased in Brooklyn, New York, David received his B.A. in English from Columbia University and M.F.A. in Writing from Washington University in St. Louis, where he taught for several years on the faculty of the Undergraduate Creative Writing Program and Pre-College Division. \n\nA former Admissions Ambassador at Columbia University, he has 7 years of experience in college admissions support and has guided his students to gain admission to many elite universities including Harvard, Yale, UChicago, Columbia, Penn, Brown, Cornell, Duke, Georgetown, UC Berkeley, UCLA, WashU, USC, and NYU. His students have also received admissions to the most competitive summer programs, such as Harvard Summer School, the Interlochen Summer Arts Camp, MIT\u2019s Research Science Institute, and the Iowa Young Writers\u2019 Studio.\n\nA writer by trade, David has been published in many of the nation\u2019s leading magazines and periodicals. He has worked with hundreds of students in developing their creative and expository writing skills, and he prides himself on expertly identifying and crafting the narratives that best showcase his advisees\u2019 personalities and talents. He is a frequent regional and national judge for the Scholastic Art & Writing Awards.\n\nAlongside his enduring career in college admissions counseling, David has a robust background in corporate legal support and financial services. He began his professional career as a Structured Investments and Derivatives Analyst at Davis Polk & Wardwell LLP, where he served on a team of legal professionals who provided specialized counsel to Citigroup, Inc. on large and complex financial transactions. David cites his early exposure to corporate finance in New York City as instilling in him a relentless commitment to precision and efficiency, e"},{"name":"Leonard","full_name":"Leonard Thomas","tier":"SENIOR STRATEGIST","bio":"Based in Los Angeles, Leonard is a graduate of Yale University, where he earned his Bachelor\u2019s degree in Political Science with a concentration in Urban Studies, and the American Conservatory Theater, where he completed his Master of Fine Arts in Acting.\n\nLeonard has 7+ years of experience in education, mentorship, and college admissions counseling. He has supported dozens of students in navigating the college process through his work with leading education nonprofits, including LEDA (Leadership Enterprise for a Diverse America) and Mosaic College Prep. His mentorship style is structured, motivational, and highly personalized while rooted in building trust and clear communication with families. He helps students discover their authentic story while developing clear, actionable strategies to reach their goals.\n\nIn addition to his admissions experience, Leonard brings a professional background in investment banking at Bank of America Merrill Lynch and as a nationally certified financial educator. He combines this analytical perspective with his creative background as a professional actor and storyteller to help students articulate unique narratives that resonate with admissions officers.\n\nLeonard\u2019s students have gained admission with repeated success across many institutions across the Ivy League, top liberal arts colleges, and highly ranked research universities including Harvard, Yale, Princeton, Stanford, MIT, Caltech, Brown, Columbia, UPenn, Johns Hopkins, Northwestern, Wellesley, Barnard, Washington University in St. Louis, New York University, University of Southern California, Emory, Haverford, Swarthmore, UNC Chapel Hill, UC Berkeley, and UCLA.\n\nPERSONAL\nLeonard serves on multiple alumni boards, including the Yale Black Alumni Association, and co-founded Money Fri"},{"name":"Sydney","full_name":"Sydney","tier":"SENIOR STRATEGIST","bio":"Sydney is a graduate of Cornell University (BA) and University of Oxford (MSc) and has 8 years of experience working with and preparing students for the college admissions process to top schools in the US and UK. She has also helped those same students gain admission to highly selective and competitive summer programs. \n\nAfter graduating from Cornell with a degree in biology and Asian studies, Sydney moved to China where she lived in Beijing for several years and worked in the educational consulting industry. Due to her academic as well as professional time spent abroad, Sydney has a unique perspective on the highly competitive nature of top college admissions and how to optimize each of her own students' chances of admission.\n\nSydney has supported hundreds of students over the years in gaining admission to schools including Princeton University, University of Pennsylvania, Brown University, University of Chicago, Columbia University, University of Cambridge, University of California, Berkeley, University of Southern California, New York University, Washington University in St. Louis, Middlebury College, Vassar College, Wesleyan University, Smith College, and Purdue University. \n\nShe has also worked at a non-profit education start-up that provides STEM extracurricular enrichment activities to highly motivated high school students. Her approach to guiding students is comprehensive and she believes starting early is key. \n\nSydney enjoys thinking creatively and in tandem with each of her students to help them pursue unique activities that align with their genuine interests, which ultimately helps them become strong college applicants. \n\nMAJOR-BASED RESULTS (internal unless requested):\nPrinceton University: Physics \nUniversity of Pennsylvania: Vagelos Life Sciences & Manage"},{"name":"Sim","full_name":"Sim Low","tier":"SENIOR STRATEGIST","bio":"Avail till 6pm PST\n\n  \n\nSim is a graduate of  Johns Hopkins University where she earned her BA in Public Health.  She has over six years of student mentoring and consulting experience.\nHer students have aimed high and earned admission to institutions such as Princeton, MIT, Harvard, Yale, Duke, Johns Hopkins, Northwestern, the University of Pennsylvania, Cornell, the University of Chicago, Columbia, UC Berkeley, UCLA, Rice, and UT Austin across majors from STEM to the humanities and social sciences. \nWhile at Johns Hopkins Sim served as President of the Debate Council and conducted independent research across education, public health, and Asian American studies. Her work earned the Provost Undergraduate Research Award and opportunities to present at national conferences.\nIn 2024, she was selected as a fellow for the National Science Foundation\u2019s Mobilization and Political Economy Program, where she studied the Culion Leper Colony as a case of population management through public health policy. \nSim\u2019s interdisciplinary approach shapes how she mentors students, helping them connect the threads of their experiences into strong, authentic narratives. Her strengths lie both in ability to connect and mentor students and her strong history in debate having coached at top private schools in the USA. For over six years, Sim has coached hundreds of students as a nationally competitive debate coach, including at the Tournament of Champions. \nBeyond education, she has worked in public affairs and strategic communications. At SKDK, a leading political consulting firm, she supported clients ranging from brand protection for a multinational entertainment company to media research for the Cherokee Nation. Her professional experience centers on crafting narratives that persuade audience"},{"name":"William","full_name":"William Anderson","tier":"SENIOR STRATEGIST","bio":"Originally from Boston, Massachusetts, William is a graduate of Middlebury College where he led new student orientation, oversaw the adjustment and transition of students to campus and wrote for Middlebury\u2019s school newspaper, The Campus. \nAs a student writer, he routinely reviewed, edited, and critiqued the writing of his fellow students, and now continues to focus on narrative building to hone in on competitive stories for his students. \n\nWith over four years of experience in admissions consulting and six years of combined experience in customer service and marketing, William has supported his students in gaining admission to top universities and summer programs. His students\u2019 results include admission to Stanford, MIT, UPenn, Brown, Columbia, Northwestern, UChicago, Cornell, UC Berkeley, UCLA, Carnegie Mellon, Washington University in St. Louis, Johns Hopkins, Emory, USC, UNC, UT Austin, UMichigan, UVA, NYU, and more across various disciplines. \nWilliam works with his students to build carefully structured, school specific applications to some of the most competitive majors at these top US colleges. He prides himself in his detailed and comprehensive approach offering comprehensive guidance throughout the entire process\u2014from developing application strategies (such as selecting schools and majors, identifying recommenders, etc.) to crafting impactful, individualized personal statements (from brainstorming and outlining to polishing final drafts). He has extensive experience assisting with post-application strategies, including letters of continued interest for waitlisted students and choosing between admitted schools.\nWilliam is passionate about encouraging and developing competitive academic angles that enable students to explore their passions and use their limited t"},{"name":"Kameron","full_name":"Kameron Gray","tier":"SENIOR STRATEGIST","bio":"working hours: 9-5pm Seoul, 4pm-11pm PST (PST/MST preferred; CST/EST students need late night availability)\n\n  \n\nCalifornian native Kameron earned her Bachelor\u2019s degree from UCLA. \n\nKameron graduated with honors from UCLA, making the most of UCLA\u2019s rich study abroad programs by gaining multiple scholarships, including the Duttenhaver scholarship, which selects only 25 students with high merit UC-wide for a one-year International Business and Marketing program at Yonsei University in Seoul. \n\nProfessionally, Kameron has worked alongside youth of all ages for many years and in a variety of educational and recreational contexts. Most recently, Kameron spent time working as a teacher for gifted and talented primary school students, as well as students striving to enroll in more advanced coursework. Amongst all of her students, Kameron is known for finding ways to make learning enjoyable and hands-on, as well as finding ways to make material \u2018relevant\u2019 to the student. \n\nIn her 4+ years as a Crimson Strategist,  Kameron has had the pleasure of working with students with top college admissions goals. She has guided her students to top universities such as Columbia, Stanford, Harvard, MIT, Yale, Cornell, Brown, UPenn, Princeton, Duke, Carnegie Mellon, Georgetown, UCLA, UC Berkeley, UNC Chapel Hill, Northwestern, University of Michigan, Vanderbilt, University of Southern California (USC)  and many more for competitive majors in STEM and the social sciences. \n\nWhen working with any student regardless of age, culture, or background, Kameron always makes it a priority to build positive rapport and a relationship together to foster trust and respect.\n\nPERSONAL\n\nOutside of work, Kameron enjoys gardening in her rooftop garden and decorating the interior of her home. She also loves tra"},{"name":"Dan","full_name":"Dan Godlin","tier":"SENIOR STRATEGIST","bio":"Dan graduated from New York University and has spent over a decade helping students navigate the complex and competitive world of college admissions. \n\nDrawing from his extensive experience, he has guided over 200 students toward acceptance at top-tier institutions including Harvard, MIT, Stanford, Yale, Princeton, Columbia, Brown, Cornell, Dartmouth, UChicago, UPenn, Johns Hopkins, Northwestern, WashU St. Louis, Vanderbilt, Duke, UC Berkeley, UCLA, USC, Notre Dame, Carnegie Mellon, Georgetown, Rice, University of Michigan, University of Virginia, UNC-Chapel Hill, Wesleyan, Amherst College, Boston College, Northeastern, Emory, NYU, and many more. Dan has also played a key role in helping students gain entry to some of the most renowned summer programs in the U.S. including Yale Young Global Scholars, Wharton Global Youth Program, Telluride Association Summer Seminar, Bank of America Student Leaders, and LaunchX, among others.\n \nDan\u2019s approach to admissions consulting is both strategic and deeply personalized. He works closely with students, guiding them through every phase of the process\u2014from curating school lists to managing timelines, brainstorming essay ideas, networking with admissions officers, preparing for interviews, and refining application materials. His ability to form genuine, trusting relationships allows him to unlock students\u2019 unique stories, helping them craft submissions that showcase their individuality, strengths, and long-term goals. Dan\u2019s keen attention to detail ensures that each student builds compelling applications that resonate with admissions committees.\n \nIn addition to his expertise in education, Dan brings a creative edge to his work, honed through 14 years of experience as a songwriter and music producer. His music has been featured on pop"},{"name":"James","full_name":"James Wang","tier":"SENIOR STRATEGIST","bio":"James graduated with a B.A. in Economics and Sociology from UC Berkeley, where he was a senior writing coach, career development advisor, and volunteer high school counselor. \n\nHe earned his MBA from the University of Southern California\u2019s Marshall School of Business, where he conducted research on corporate strategy and international economics.\n\nJames has over 12 years of experience in college admissions, having worked as a VIP education consultant in the USA and China (Beijing and Shenzhen). Using his extensive knowledge on what it takes to get into some of the best colleges in the US. James worked successfully with public and private high school students across the United States, Canada, the Greater China Region, Singapore, and Hong Kong. \nThe hundreds of students and families that James has helped reach their college admission goals span everywhere from elite Chinese high schools such as Nanjing Foreign Language School, and Shenzhen BASIS International School, to top North American private institutions such as Choate Rosemary Hall, Groton Academy, Sage Hill School, Webb School, to regular public high schools across the globe. \nWith his expertise and passion for working with families, James has helped students gain admission to elite colleges including Yale, UPenn, Duke, Brown, Stanford, Johns Hopkins, Columbia, Northwestern, Cornell, University of Chicago, UCLA, UC Berkeley, Rice, Georgetown, Carnegie Mellon, NYU, UNC Chapel Hill, Emory, UMichigan, USC, Georgia Tech, UT Austin, Boston College, Boston University, Tufts, Rhode Island School of Design and Cooper Union.\nJames\u2019s students also span from diverse academic backgrounds such as engineering, CS, mathematics, physics, biology, humanities (English literature, classics), social sciences (economics, psychology, pol"},{"name":"Yiyi","full_name":"Yiyi Zhao","tier":"SENIOR STRATEGIST","bio":"Yiyi  graduated from Carnegie Mellon University (CMU) with a Bachelor of Science in Business Administration and Statistics and a minor in Professional Writing. She also holds an MBA from Columbia Business School. Following CMU, Yiyi moved to New York and began her career as a Management Consultant for one of the top consulting firms. \n\nMaintaining an interest in education, and in supporting students in achieving their college admissions goals, Yiyi worked as a College Counselor while completing her MBA, supporting over 100 students in gaining admission to top institutions such as the University of Pennsylvania, Stanford, Columbia, Brown, Cornell, MIT, Dartmouth, CMU, UC Berkeley, UChicago, Northwestern, Vanderbilt and many more.\n\nHer students have also received acceptances to prestigious MBA programs including Harvard Business School, Columbia Business School, the Wharton School of the University of Pennsylvania, and Northwestern University\u2019s Kellogg School of Management. \n\nYiyi is passionate about guiding students towards their educational goals. While her primary focus has been mentoring business-oriented students, she also has experience supporting those pursuing STEM, Engineering, and multiple other fields.\n\nPERSONAL\nOutside of work, Yiyi enjoys exploring new restaurants and pop-ups in New York City, and trying out the latest sample sales. She also enjoys binge watching the latest Netflix series - her favorite shows on Netflix are The Crown and Crash Landing on You. \n\nMAJOR-BASED RESULTS (internal unless requested)\n\nUniversity of Pennsylvania: Wharton Business, English, Chemistry, History\nStanford\nMIT\nDartmouth:  Mathematics, English\nCornell: Computer Science, Labor and Industrial Relations\nDuke University: Biology, Economics\nNorthwestern: Data Science, Computer Sci"},{"name":"Alessandro","full_name":"Alessandro Recchia","tier":"SENIOR STRATEGIST","bio":"No 9th grade\nworking hours: 6am-9am EST, 2-5:30pm EST, weekend flexibility \n\n  \n\nAlessandro is a graduate of Duke University (BA in International Comparative Studies) and Georgetown University where he completed his Masters of Science.\n\nHe is a passionate education professional who has dedicated his career to supporting students in achieving their academic goals. \n\n Alessandro specializes in strategic roadmapping, interview preparation, and narrative construction. He motivates his students to take ownership of their college journey, caring deeply about their wellbeing throughout the often stressful application process. \n\nAlessandro\u2019s extensive college admissions experience includes his work as Assistant Director of Admissions at the highly ranked Washington University is St Louis and as an admissions reader at Babson College. At WashU he evaluated thousands of first-year applications and further advised students on the admissions process for highly selective (Top 25) universities. \n\nAs an experienced consultant he has personally guided his students to gain admission to Princeton, MIT, Yale, UChicago, John Hopkins, UPenn, Caltech, Duke, Northwestern, Cornell, WashU, Dartmouth , Brown, Vanderbilt, Rice, Notre Dame, Carnegie Mellon, Emory, Georgetown, University of Michigan, New York University, University of Virginia, University of Southern California, University of North Carolina Chapel Hill, Wake Forest, Tufts, Boston College, UC Davis, University of Illinois - Urbana Champaign, UT Austin, Boston University, Case Western, William & Mary, Georgia Tech, Northeastern University, Tulane and University of Florida.\n\nHis students have also been accepted to all the top Liberal Arts colleges including: Smith, Babson, Vassar, Davidson, Grinnell, Washington and Lee, Claremont McKe"},{"name":"Andrew","full_name":"Andrew Green","tier":"SENIOR STRATEGIST","bio":"A graduate of the University of Chicago, Andrew has been helping guide students and their families through the college admissions process for the last eight admissions cycles. \n\nAs part of his extensive college admissions experience, Andrew was a Senior Admissions Officer at the University of Chicago, where he reviewed and made decisions on several thousand applications. He also supported UChicago\u2019s student outreach as the Head Writer in the Office of College Admissions, overseeing the writing of all print and electronic materials including a Highly Selective Admissions Guidebook. As a member of Admissions Committees at UChicago (for Illinois region applicants and for boarding and independent schools), Andrew gained first-hand insight into how highly selective universities make admissions decisions and how students\u2019 applications are read and discussed, which informs his guidance to students and advice to families. \n\nAs a strategist, Andrew focuses on demystifying the complex admissions landscape for his students and their families, offering individualized guidance to help students explore their college options. He has significant experience with students from top public and private high schools aiming for competitive colleges, having worked with students applying to STEM and humanities majors and those pursuing applications to fine arts and conservatory programs. He has also worked successfully with many recruited athletes.\n\nOutside of his admissions work, he writes both fiction and nonfiction and has taught undergraduate writing courses at the university level. His students benefit from his writing insight as they shape and craft their essays while developing their unique narrative voice. \n\nStudents who Andrew has advised have been admitted to Harvard, Stanford, Caltec"},{"name":"Shiv","full_name":"Shiv Patel","tier":"SENIOR STRATEGIST","bio":"No PST\n\n  \n\nShiv is an M.D. Candidate at Northwestern University Feinberg School of Medicine. \n\nHe completed his undergraduate studies at Northwestern University as part of the Honors Program in Medical Education (HPME), a combined medical BA/MD program and previously graduated from the North Carolina School of Science and Mathematics, a highly selective public boarding school ranked #1 in the nation as of 2025.\n\nWith the flexibility afforded to him as part of the HPME, Shiv studied and conducted research in psychology and data science during his undergraduate years. He then pursued his medical education at the Feinberg School of Medicine, where he received scholarships covering the full cost of attendance and ultimately ranked in the top quartile of his class. Additionally, he started a nonprofit organization, Hamara Health, that aims to support South Asian community health through sustainable technologies and action-oriented educational initiatives. \n\nOver the past several years, Shiv has had the opportunity to work with numerous students seeking admission to top universities, selective combined medical BS/MD programs, and prestigious scholarship opportunities in the US. He has guided students to gain admission to universities like Harvard, Princeton, UPenn, Cornell, Columbia, Emory, Johns Hopkins, Brown PLME, Northwestern, UChicago, Duke, UCLA, UNC, Notre Dame, Case Western, Penn State BSMD, Rutgers BSMD, and more.\n\nShiv aims to empower students to develop their own authentic narrative as they prepare for the admissions process, motivating them to excel at the highest level.\n\nMAJOR-BASED RESULTS (internal unless requested)\n\nBrown University: PLME\nNortheastern: N.U.in, Health Sciences/Biology\nUMichigan: Public Health\nUNC: Public Health, Biology\nVanderbilt: Public Heal"},{"name":"Christina","full_name":"Christina Chady","tier":"SENIOR STRATEGIST","bio":"No PST, prioritize VVIP/VIP allocations\n\n  \n\nChristina graduated from Washington University in St. Louis where she worked as Assistant Director of Undergraduate Admissions, learning the intricate decision-making processes involved in highly selective college admissions. \n\nShe then moved to the other side of the desk to work as an International Admissions Counselor for five years and has helped dozens of students apply to and gain admission to some of the best colleges in the US including UPenn, Cornell, Columbia, Stanford, Brown, Carnegie Mellon University, MIT, Washington University in St Louis, UCLA, UC Berkeley, Johns Hopkins, Emory, Vanderbilt, Northwestern, Rice, University of Washington, and many more. Her results span the humanities and social sciences from Classics to Cognitive Science. \n\nChristina also holds an MFA in Creative Writing and Poetics. With extensive experience in writing and editing, she deeply values the impact and significance of the essay and written portions of college applications. She enjoys learning about students\u2019 passions, finding them opportunities to develop their interests, and advising how to best represent themselves through their strategic application narrative so that they can maximize their college admissions outcomes.\n\nPERSONAL\n\nChristina describes herself as a \u2018word nerd\u2019 devoted to writing practice (including poetry, fiction, or hybrid texts). If she is not working on a writing project, she is reading and exploring the world to find inspiration. She has a love for plants, photography and most of all her husky, Raina, and her hedgehog Mochi! \n\nMAJOR-BASED RESULTS (internal unless requested)\n\nBrown University: Classics\nCarnegie Mellon University: Cognitive Science, Computer Science \nColumbia University: Classics - Trinity Dual Deg"},{"name":"Amrina","full_name":"Amrina Ahmed","tier":"STRATEGIST","bio":"Amrina is a graduate of Emory University, where she earned a Bachelor of Arts in Biology with a minor in Anthropology before moving onto her Masters of Science in Physiology and Biophysics at Georgetown University.\nAmrina was born in metropolitan Philadelphia and raised in Chicago where she attended selective high schools and pursued dual enrollment courses at Northwestern University, an experience that deepened her understanding of academic rigor and college readiness. \nNavigating a nontraditional path to college gave Amrina an early insight into the complexities of the admissions process and inspired her to develop creative, strategic approaches for maximizing opportunities. Through her years of college consulting, she now leverages these insights to bridge academic achievement with compelling storytelling and has guided students to top STEM and humanities programs at Harvard, MIT, Yale, Stanford, UC Berkeley, CalTech, George Washington (BA/MD), UChicago, Emory, Georgetown and more. \nAmrina\u2019s expertise spans pre-med and STEM admissions, computer science and engineering programs, and interdisciplinary liberal arts pathways. She brings an empathetic, analytical, and informed perspective to her work, helping students identify the environments where they can thrive both academically and personally. \nIn addition to her work in admissions, Amrina served as a consultant for Everview Consulting Group at Emory University\u2019s Goizueta Business School, where she collaborated on the design and implementation of an eco-friendly medical mask prototype for Children\u2019s Healthcare of Atlanta, an experience that strengthened her passion for client-centered strategy and innovation. \nHer entrepreneurial spirit also prompted her to found Essay Deck, a venture launched through the University "},{"name":"Annie","full_name":"Annie Lai","tier":"STRATEGIST","bio":"VIP only\n\n  \n\nAnnie is a graduate of University of California, Berkeley where she earned her Bachelor of Science in Business. \n\nShe brings over a decade of admissions and consulting, including five years as the Director of Admissions at UC Berkeley\u2019s Haas School of Business. In that role, Annie not only evaluated thousands of applications but also trained admissions officers, mentored undergraduates, and created and taught a business communications course. \n\nHer experience extends beyond admissions. As a former recruiting manager at KPMG in San Francisco, Annie specialized in hiring top college graduates, giving her a \u201cbig picture\u201d perspective on how students can succeed after graduation.\n\nAnnie has guided students to admission at some of the most selective institutions in the U.S., including Stanford, Brown University, Dartmouth, UC Berkeley, UCLA, USC, Pomona College, Claremont McKenna, and Northeastern. \n\nKnown for her strategic mindset and energizing presence, she takes the time to understand each student\u2019s passions, motivations, and experiences, helping them craft compelling narratives.\n\nAs a parent, Annie understands the emotional intensity and complexity of the college admissions process because she personally guided her own daughter through every stage of the journey to gain an Early Decision acceptance at Brown University for the Class of 2029. She helped her daughter stay focused, adapt plans as her goals evolved, and ultimately find the college environment where she could truly thrive.\nHaving lived this journey not just as an admissions professional, but also as a parent, Annie brings a unique dual perspective to her work with families. She understands the pressure, the uncertainty, and the desire to get it \"right.\" That firsthand experience allows her to off"},{"name":"Eleanor","full_name":"Eleanor Van Evera","tier":"STRATEGIST","bio":"Originally from Boston, Eleanor attended Wesleyan University where she achieved her BA in Sociology, exploring how culture, community, and identity shape the opportunities students encounter. She carried that curiosity beyond the classroom, becoming a trusted peer mentor and honing her skills as a writer and editor. She has over three years experience in guiding her students to top college admissions results.\nKnown for her warmth and one-on-one connection, Eleanor helps students tell their stories with honesty and precision, capturing not just their achievements, but their resilience, creativity, and potential. Her students have gone on to earn acceptances from top institutions including Columbia, Cornell, Northwestern, UChicago, Washington University in St. Louis, Emory, NYU, UNC, Georgia Tech, UWashington, and more across STEM and social science disciplines. \nEleanor is passionate about helping students push past the familiar, discover unexpected intellectual interests, and weave those discoveries into powerful, cohesive application narratives. She believes that the same curiosity and breadth of thought that strengthen an admissions profile also prepare students to thrive in our fast-changing world.\nMAJOR-BASED RESULTS (internal unless requested)\nColumbia: Music and American Studies\nCornell: Sociology and Feminist, Gender, and Sexuality Studies\nUChicago: Environmental and Urban Studies\nNorthwestern: Theatre\nWashU: Biology\nCMU: Math, Information Systems\nEmory: Economics\nGeorgia Tech: Computer Science\nCase Western: Applied Mathematics\nUVA: Environmental Studies; Sociology\nUNC: Environmental Science and Public Policy\nUT Austin: Business \nUIUC: Computer Science\nNYU: Mathematics and Data Science\nBU: Computer Science\nBC: Sociology\nUWashington: Mechanical Engineering\nWIlliam"},{"name":"Grace","full_name":"Grace Bagga","tier":"STRATEGIST","bio":"Grace has two degrees from Stanford University \u2014 a B.A. in Psychology and an M.A. in Communication with a focus on Media Studies. Additionally, at Stanford she served students as a Psychology and Counseling Teaching Assistant, Peer Counselor, Resident Assistant, and Coordinator of the Admitted Students Weekend and New Student Orientation. Having worked with students across different timepoints in their student development journey, Grace is comfortable with constructively communicating with high school students.\n\nOutside of college admissions, Grace has a strong background in project management, having worked within the Healthcare IT and Political Organizing spheres on large scale projects with complex timelines. Grace's approach to working with students is deeply collaborative. With a background in counseling, Grace is able to listen effectively and ask the right questions to holistically understand students. She actively guides students along the college admissions journey while empowering them to authentically tell their story. \n\nFor all involved stakeholders, Grace clearly breaks down the step-by-step process to increase understanding and reduce stress. As a result of her thorough approach, her students have achieved outstanding results and have been admitted to top universities such as Vanderbilt, Georgetown, Emory, Williams, Georgia Tech, UWashington, UC San Diego and more across various disciplines from STEM to the social sciences. \n\nMAJOR-BASED RESULTS (internal unless requested)\nVanderbilt: Computer Science with (Cornelius Vanderbilt Scholarship, full ride) \nGeorgetown: American Studies, Environmental Studies\nGeorgia Tech: Computer Science\nNortheastern University: Computer Science, Cell and Molecular Biology, English, Music, Psychology\nBowdoin: Mathematics, Bioc"},{"name":"Brittany","full_name":"Brittany Nguyen","tier":"STRATEGIST","bio":"Brittany graduated from Rice University with a degree in Cognitive Science. A nationally recognized talent in both math and chess, Brittany has earned numerous local, state, and national accolades and was invited to elite competitions such as the Chess World Youth Championships and the MIT Math Prize for Girls. She is also a phenomenal test-taker, having earned perfect scores on nearly a dozen AP exams and scored in the top 1% on both the SAT and PSAT. \nBeyond academics, Brittany has been a deeply engaged community leader. She served as president of the largest pre-medical organization at Rice, worked to expand its presence nationwide, and became a certified first responder for all campus emergencies. She\u2019s also a trained crisis counselor with the Crisis Text Line and the co-founder and project manager of The Simplifications Project\u2014a student-led initiative dedicated to making complex healthcare research accessible to all.\nShe has supported students in successfully gaining admission into a wide range of top tier undergraduate programs including Harvard, Yale, Cornell,  UCLA, UC Berkeley, UC San Diego, Rice, Georgia Tech, UMich, WashU, Tufts, UVA, Claremont McKenna College, University of Wisconsin\u2013Madison, and UT Austin. \n\nBrittany has leveraged her extensive and diverse set of experiences to support her students to success in admissions, helping with all aspects of the application from creative brainstorming on innovative passion projects to connecting students with competitive internships to crafting a captivating narrative. \n\nPERSONAL\n\nOutside of admissions, Brittany is a proud cat mom, a longtime lover of Chris Sanders and his artistic work, and an enthusiastic e-sports fan (go T1!). \n\nMAJOR-BASED RESULTS (internal unless requested)\nHarvard: International Relations \n"},{"name":"Lisa","full_name":"Lisa Shen","tier":"STRATEGIST","bio":"A Southern California native, Lisa graduated from Swarthmore College with a degree in Psychology and Political Science. Lisa has significant experience supporting high school students in their applications to highly competitive undergraduate programs. Her guidance covers every aspect of the process, from developing an application strategy (choosing schools and majors, identifying strong recommenders) to crafting personal statements (including brainstorming, outlining, drafting, and editing). She also assists with completing applications, helping students effectively present their extracurricular activities and write diversity or adversity statements. After applications are submitted, Lisa continues to provide support with tasks like drafting letters of interest for waitlists and navigating scholarship and financial aid applications. \n\nThroughout her career in education Lisa has served in various capacities from teaching in the classroom to being a test prep mentor, informing the ways in which she works with her students today as their strategist. Lisa has worked to instill a growth mindset and a \u201ccan-do\u201d attitude that stays with her students forever. She always brings out the best in her students, highlights their strengths, and empowers them to think creatively and communicate persuasively. \n\nIt is no surprise then that Lisa has supported her students in gaining admission to the best schools in the US including Harvard, UCLA, UC San Diego, UC Berkeley, NYU, Emory, Washington University in St. Louis, and Carnegie Mellon across STEM majors and the humanities. \n\nMAJOR-BASED RESULTS (internal unless requested)\nCarnegie Mellon: Mathematical Sciences, Creative Writing\nWashington University in St. Louis:  Mathematics \nUC Berkeley: Applied Mathematics\nEmory: International Rela"},{"name":"Kayla","full_name":"Kayla Kim","tier":"STRATEGIST","bio":"Kayla graduated cum laude from Columbia University with a B.A. in Political Science and earned her Master\u2019s in American History with distinction from the University of Oxford. \n\nShe has helped students gain admission to top universities and law schools in the US. Her students have been admitted to MIT, Columbia, Brown, Stanford, Williams, Swarthmore, Cornell, UChicago, UC Berkeley, NYU, Duke, Case Western, and more, with majors spanning Chemical Engineering, Computer Science, Electrical Engineering, Biomedical Engineering, Physics, Mathematics, Business Administration, Economics History, Political Science, East Asian Studies, Anthropology, and Creative Writing.\n\nAs an independent consultant, Kayla has helped students craft compelling application narratives, build well-balanced school lists, refine major selections, identify strong recommenders, and enhance extracurricular profiles through competition and summer program placements. She also specializes in personal statement development, ensuring each student\u2019s unique story stands out in the highly competitive top college admissions landscape.\n\nKayla approaches each application with meticulous attention to detail, working collaboratively with students and families to navigate the complexities of college admissions. She is known for her empathetic mentorship style, helping students uncover personal insights that transform their applications into compelling narratives. Kayla is passionate about helping students discover their genuine interests and leverage these passions to stand out in admissions. \n\nMAJOR-BASED RESULTS (internal unless requested)\nMIT: Electrical Engineering\nStanford: Computer Science, Art History\nWilliams: Art History\nSwarthmore: History\nCornell: Chemical Engineering, Computer Science\nColumbia: East Asian "},{"name":"Matt","full_name":"Matt Moores","tier":"STRATEGIST","bio":"With experience in the education industry and a deep passion for guiding students toward success, Matt is dedicated to helping students achieve their academic and career aspirations. Based in New York City and a graduate of Johns Hopkins University, renowned for its excellence in STEM, Matt offers a unique perspective informed by his rigorous interdisciplinary studies and real-world expertise.\nMatt has a proven track record of working with students across a variety of disciplines, including STEM, humanities, and the social sciences. Matt provides personalized guidance to highlight his students\u2019 strengths, build compelling narratives, and showcase their passion throughout their application. From crafting well balanced school lists to curating impactful extracurricular profiles, Matt supports students at every stage of the application process\u2014from the initial consultation to the moment they hit submit.\nMatt\u2019s students have gained admission to prestigious institutions such as Stanford, Columbia, CMU, Princeton, UC Berkeley, New York University, and Johns Hopkins University, as well as top liberal arts colleges like Vassar and Wellesley. Notably, his students have secured impressive results, including a full-ride scholarship to Princeton.\nPERSONAL\n\nIn his free time he joys playing board games with friends, cooking new meals with his partner, going to comedy shows, and visiting local museums in New York! \n\nMAJOR-BASED RESULTS (internal unless requested)\nPrinceton: Philosophy/Economics (full ride)\nCMU: Computer Science\nNYU: Stern Business, Economics/Politics\nGeorgia Tech: Engineering\nHopkins: Computer Science\nCornell: Computer Science\nUIUC: Computer Science\nUVA: History, Economics, Engineering\nUWisconsin Madison: Engineering\nNorthwestern: Chemistry\nUSC: Political Science\nUMic"},{"name":"Delanya","full_name":"Delanya Storey","tier":"STRATEGIST","bio":"Delanya is a graduate of Harvard University who understands the power of education. Growing up in Birmingham, Alabama, Delanya was a nationally recognized speech and debate student who received the International Baccalaureate diploma and a Career Tech endorsement upon graduating high school, amassing over $269,000 in scholarships along with awards from Elks National Foundation and the Horatio Alger Association. \nDelanya has supported over 200 students in their application processes, her students gaining admission to Harvard, Yale, Upenn, Columbia, UChicago, Johns Hopkins, Duke, Northwestern, UMichigan, USC and more across various STEM majors.\nDuring her time at Harvard, Delanya was instrumental in enhancing higher education initiatives. She was a recruiter for Harvard's Griffin Financial Aid Office and supported pathways to college at the City of Birmingham's Office of Innovation and Economic Opportunity. As a Lead for America Summer Fellow, she played a pivotal role in piloting the Birmingham Promise, enabling free college tuition and apprenticeship opportunities for high school students. \nHer dedication further shone through as a College Application Support Fellow at Project Rousseau, guiding students and parents from immigrant and low-income backgrounds through the labyrinth of college selection and financial aid applications.\nEager to continue her impactful journey, Delanya aspires to merge her knowledge, unwavering dedication, and rich experiences to make lasting contributions to Crimson Education and the families she encounters.\nPERSONAL\nIn her free time, Delanya enjoys kayaking, writing poetry, reading, cooking, and watching Star Trek: Deep Space Nine. She was also a gymnast in her youth and enjoys taking adult gymnastics classes as a hobby.\nMAJOR-BASED RESULTS ("},{"name":"Praxedes","full_name":"Praxedes Quintana","tier":"STRATEGIST","bio":"Praxedes is a dedicated and accomplished college counselor with a proven track record of guiding students to success. A graduate of Haverford College, Praxedes also holds a Master of Education in Education Leadership, Organizations, and Entrepreneurship from the prestigious Harvard Graduate School of Education.\nAfter earning her undergraduate degree, Praxedes returned to Haverford as an Assistant Director of Admission, where she spent three years evaluating applications and advising students and families through the college admissions process. This experience gave her invaluable insight into what highly selective top-tier colleges seek in applicants, and she brings this expertise to every student she mentors.\nPraxedes has supported her students in gaining admission to schools like Yale, Cornell, UPenn, Brown, University of Chicago, Dartmouth College, UMichigan, Duke University, Washington University in St. Louis, Rice University, Northwestern University, the University of Southern California, UC Berkeley, and UC San Diego across multiple disciplines including Data Science, Biology, Economics, Public Policy, Environmental Science and more. She has also assisted her students in their successful summer program admission to UPenn\u2019s Leadership in the Business World and Yale Young Global Scholars. \n\nPERSONAL\n\nOutside of work, Praxedes enjoys exploring her home state of Colorado, spending time with family, and traveling throughout the US to visit her friends. She loves live music and learning new styles of dance. She\u2019ll take any opportunity to try a new restaurant or recipe! \n \nMAJOR-BASED RESULTS (internal unless requested)\nUPenn: Huntsman\nCornell: Viticulture & Enology\nDartmouth\nVanderbilt University: Public Policy Studies \nWashU | Washington University in St. Louis: Data Sc"},{"name":"Matt","full_name":"Matt Akers","tier":"STRATEGIST","bio":"Matt earned his bachelor\u2019s degree from Duke University and has received a Master of Education degree from the Harvard Graduate School of Education. \n\nMatt has nearly a decade of experience as a classroom teacher (at some of the best private schools in California and Massachusetts) of English literature, creative writing, social studies, and drama. He has taught students at various stages of their education journey including those in middle school, high school, and college. He has also coached tennis, basketball, volleyball, and soccer and has led student clubs for debate, robotics, and film. Before working in college admissions, Matt was a project manager in the tech industry.\n\nMatt\u2019s students have secured offers to some of the best colleges in the US including Harvard, Princeton, Brown, Stanford, Cornell, Yale, the University of Pennsylvania, Dartmouth, Cornell, UChicago, Georgetown, UC Berkeley, Tufts, the University of Southern California, Boston University, Swarthmore, Pomona College, Claremont McKenna, William and Mary, UMichigan and the University of North Carolina at Chapel Hill. His students have secured scholarships up to $40,000.\n\nMatt believes in building positive, productive relationships with families to help students reach their utmost potential.\n\nPERSONAL\nWhen he isn\u2019t working with his students Matt enjoys writing, reading, playing sports, and hiking!\n\nMAJOR-BASED RESULTS (internal unless requested)\n\nCornell: Information Science\nUChicago: Business Economics\nPrinceton: Environmental Science\nBrown: Political Science (transfer)\nNYU: Sports management (transfer)\nDuke: Theater\nWilliam & Mary: Public Policy\nTufts: Public Health\nPurdue: Engineering\nCase Western: Neuroscience\nUT Austin: Psychology\nUniv of North Carolina at Chapel Hill: Computer Science, Business,"},{"name":"Ozzie","full_name":"Ozzie Mendoza","tier":"STRATEGIST","bio":"Ozzie graduated from UCLA and has dedicated his life to education, guiding hundreds of students on their journeys to the most prestigious colleges in the USA.\n\nCurrently based in Florida, Ozzie\u2019s career has covered a rich and diverse range in education and admissions counselling including both teaching and holding counselor roles in the Bay Area, New Jersey and Florida.\n\nHis expertise is further strengthened by his experience as a former admissions reader for both UCLA and Stanford University, where he reviewed over two thousand applications.\n\nThese roles provided him with invaluable insights into what selective schools seek in prospective students. His understanding of each institution\u2019s selection criteria\u2014including academic excellence, intellectual curiosity, resilience, character, and community impact\u2014enabled him to help students craft standout applications that resonate with admissions committees. \n\nOzzie also volunteers as a scholarship reader for UCLA, demonstrating his commitment to widening access to higher education.\n\nThroughout his career, Ozzie has helped students gain admission to schools such as Harvard, Stanford, UCLA, UC Berkeley, USC, Santa Clara University, the University of Pennsylvania and many more. Ozzie has supported his students in gaining admissions across a diverse range of majors, including Business, Psychology, Biology, Math, Computer Science, Mechanical Engineering, Environmental Science, and Political Science. \n\nOzzie brings a proven formula of knowledge, experience, and personalized guidance to each student, empowering them to showcase their unique strengths and talents. Families who partner with him can expect a dedicated advisor who understands the complexities of competitive admissions and is committed to helping each student realize the"}];
+
+// ── State ───────────────────────────────────────────────────────────────────
+const activeTiers = new Set(['PLATINUM','SENIOR+','SENIOR','STANDARD']);
+const activeSchoolTypes = new Set();
+let availabilityMap = {}; // { "FirstName LastName": { status: "Yes"|"Limited"|"No", notes: "..." } }
+let resultsMap = {}; // { "counselorname": ["Stanford: CS (Ivy)", "MIT: Physics (Ivy)", ...] }
+const RESULTS_URL = 'https://script.google.com/macros/s/AKfycbyAr-k1AZdT23NaQRtuk_atcvletbLaT8d5EzVNfSZHJRwD-bxEbE9WhY1o2u3pGMceZA/exec';
+let sheetUrl = localStorage.getItem('crimson_sheet_url') || 'https://script.google.com/macros/s/AKfycbybXsPR13tPCHjmH5F2agpgDyCNHHScLOVJNaAb0VirUMHZemHKG39q07ijZE8BAz6IwQ/exec';
+
+// ── Init ────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (sheetUrl) loadAvailability();
+  else showBanner('warn', 'No availability sheet connected — all strategists shown as available. Click "Availability Sheet" to set up.');
+  loadRecentResults();
+});
+
+// ── Tags & tier chips ────────────────────────────────────────────────────────
+document.querySelectorAll('#schoolTypeTags .tag').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const val = btn.dataset.val;
+    btn.classList.toggle('active');
+    activeSchoolTypes[btn.classList.contains('active') ? 'add' : 'delete'](val);
+  });
+});
+document.querySelectorAll('.tier-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('active');
+    activeTiers[chip.classList.contains('active') ? 'add' : 'delete'](chip.dataset.tier);
+  });
+});
+
+// ── Settings modal ───────────────────────────────────────────────────────────
+function openSettings() {
+  const savedKey = localStorage.getItem('crimson_api_key') || '';
+  document.getElementById('apiKeyInput').value = savedKey ? '••••••••••••••••' : '';
+  document.getElementById('sheetUrlInput').value = sheetUrl;
+  document.getElementById('sheetSaveMsg').style.display = 'none';
+  document.getElementById('settingsModal').classList.add('visible');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('visible');
+}
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  localStorage.setItem('crimson_api_key', key);
+  document.getElementById('apiKeySaveMsg').style.display = 'block';
+  setTimeout(() => { document.getElementById('apiKeySaveMsg').style.display = 'none'; }, 2000);
+}
+
+function saveSheetUrl() {
+  const url = document.getElementById('sheetUrlInput').value.trim();
+  if (!url) return;
+  sheetUrl = url;
+  localStorage.setItem('crimson_sheet_url', url);
+  document.getElementById('sheetSaveMsg').style.display = 'block';
+  loadAvailability().then(() => setTimeout(closeSettings, 1200));
+}
+
+// ── Load availability from Google Sheet ─────────────────────────────────────
+async function loadAvailability() {
+  if (!sheetUrl) return;
+  showBanner('warn', 'Fetching availability…');
+
+  try {
+    const resp = await fetch(sheetUrl);
+    if (!resp.ok) throw new Error('Bad response');
+    const text = await resp.text();
+    if (!text || text.includes('<html') || text.trim().length < 5) throw new Error('Bad content');
+    parseAvailabilityCSV(text);
+    const count = Object.keys(availabilityMap).length;
+    showBanner('ok', 'Availability loaded — ' + count + ' strategists synced. Updates live on every search.');
+  } catch(e) {
+    showBanner('err', 'Could not load availability. Check the Apps Script is deployed and accessible.');
+  }
+}
+
+async function loadRecentResults() {
+  try {
+    const resp = await fetch(RESULTS_URL);
+    if (!resp.ok) return;
+    const text = await resp.text();
+    if (!text || text.includes('<html')) return;
+    parseResultsCSV(text);
+    console.log('Results loaded for', Object.keys(resultsMap).length, 'counselors');
+  } catch(e) {
+    console.log('Could not load results:', e.message);
+  }
+}
+
+function parseResultsCSV(csvText) {
+  resultsMap = {};
+  const lines = csvText.trim().split('\n');
+
+  // Find header row (contains "Strategist")
+  let dataStart = 0;
+  for (let i = 0; i < Math.min(lines.length, 6); i++) {
+    if (lines[i].toLowerCase().includes('strategist')) { dataStart = i + 1; break; }
+  }
+  if (dataStart === 0) { console.log('No header found'); return; }
+
+  // Auto-detect columns
+  const hdr = parseCSVLine(lines[dataStart - 1]);
+  const stratCol = hdr.findIndex(h => h.toLowerCase().includes('strategist'));
+  const allUniIdx = hdr.map((h,i) => h.toLowerCase() === 'university' ? i : -1).filter(i => i >= 0);
+  const uniIdx = allUniIdx.length > 1 ? allUniIdx[1] : allUniIdx[0]; // prefer full name
+  const majorIdx = hdr.findIndex(h => h.toLowerCase() === 'major');
+  const ivyIdx = hdr.findIndex(h => h.toLowerCase().includes('ivy'));
+
+  console.log('Cols - strat:' + stratCol + ' uni:' + uniIdx + ' major:' + majorIdx + ' ivy:' + ivyIdx);
+
+  for (let i = dataStart; i < lines.length; i++) {
+    const cols = parseCSVLine(lines[i]);
+    if (cols.length < 5) continue;
+    const strategistsRaw = stratCol >= 0 ? (cols[stratCol] || '').trim() : '';
+    const university = uniIdx >= 0 ? (cols[uniIdx] || '').trim() : '';
+    const major = majorIdx >= 0 ? (cols[majorIdx] || '').trim() : '';
+    const isIvy = ivyIdx >= 0 && (cols[ivyIdx] || '').trim().toLowerCase() === 'yes';
+    if (!strategistsRaw || !university) continue;
+    const resultStr = university + (major ? ' (' + major + ')' : '') + (isIvy ? ' ★' : '');
+    strategistsRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).forEach(strat => {
+      const firstName = strat.split(' ')[0];
+      if (!resultsMap[firstName]) resultsMap[firstName] = [];
+      if (resultsMap[firstName].length < 20) resultsMap[firstName].push(resultStr);
+    });
+  }
+  console.log('Results parsed:', Object.keys(resultsMap).length, 'counselors');
+  if (resultsMap['marivi']) console.log('Marivi results:', resultsMap['marivi'].slice(0,3));
+}
+
+unction getRecentResults(counselor) {
+  const byFirst = resultsMap[counselor.name.toLowerCase()];
+  if (byFirst && byFirst.length > 0) return byFirst;
+  return [];
+}
+
+function parseAvailabilityCSV(csvText) {
+  availabilityMap = {};
+  const lines = csvText.trim().split('\n');
+  // Skip header row (row 0)
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCSVLine(lines[i]);
+    if (cols.length < 3) continue;
+    const name = (cols[0] || '').trim();          // Column A: First name (must match counselor)
+    const status = (cols[1] || 'Yes').trim();     // Column B: Yes / Limited / No
+    const notes = (cols[2] || '').trim();         // Column C: Free-text notes
+    if (name) {
+      availabilityMap[name.toLowerCase()] = { status, notes };
+    }
+  }
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; }
+    else if (ch === ',' && !inQuotes) { result.push(current); current = ''; }
+    else { current += ch; }
+  }
+  result.push(current);
+  return result;
+}
+
+function getAvailability(counselor) {
+  // Try matching by first name
+  const byFirst = availabilityMap[counselor.name.toLowerCase()];
+  if (byFirst) return byFirst;
+  // Try by full name
+  const byFull = availabilityMap[counselor.full_name.toLowerCase()];
+  if (byFull) return byFull;
+  // Default: available (no sheet data)
+  return { status: 'Yes', notes: '' };
+}
+
+// ── Banner ───────────────────────────────────────────────────────────────────
+function showBanner(type, msg) {
+  const banner = document.getElementById('availBanner');
+  banner.className = type;
+  document.getElementById('availBannerText').textContent = msg;
+}
+
+// ── Main match function ──────────────────────────────────────────────────────
+async function findMatches() {
+  const apiKey = localStorage.getItem('crimson_api_key');
+  if (!apiKey) {
+    showError('No API key set. Click the ⚙ Settings button and enter your Anthropic API key.');
+    openSettings();
+    return;
+  }
+  const notes = document.getElementById('leadNotes').value.trim();
+  const grade = document.getElementById('grade').value;
+  const timezone = document.getElementById('timezone').value;
+  const focus = document.getElementById('focus').value.trim();
+
+  if (!notes && !focus) { showError('Please describe the lead or paste their profile notes.'); return; }
+
+  // Filter by tier AND availability (exclude "No")
+  const filtered = COUNSELORS.filter(c => {
+    const tierOk = (c.tier.includes('PLATINUM') && activeTiers.has('PLATINUM')) ||
+                   (c.tier.includes('SENIOR+') && activeTiers.has('SENIOR+')) ||
+                   (c.tier === 'SENIOR STRATEGIST' && activeTiers.has('SENIOR')) ||
+                   (!c.tier.includes('PLATINUM') && !c.tier.includes('SENIOR') && activeTiers.has('STANDARD'));
+    if (!tierOk) return false;
+    const avail = getAvailability(c);
+    return avail.status.toLowerCase() !== 'no';
+  });
+
+  if (filtered.length === 0) { showError('No available strategists match the selected tiers.'); return; }
+
+  hideError();
+  setLoading(true);
+
+  const leadSummary = [
+    grade && `Grade: ${grade}`,
+    timezone && `Timezone: ${timezone}`,
+    focus && `Academic focus: ${focus}`,
+    activeSchoolTypes.size > 0 && `Target schools: ${[...activeSchoolTypes].join(', ')}`,
+    notes && `\nNotes:\n${notes}`
+  ].filter(Boolean).join('\n');
+
+  // Build counselor context with availability
+  const counselorContext = filtered.map(c => {
+    const avail = getAvailability(c);
+    const availStr = avail.status + (avail.notes ? ' (' + avail.notes + ')' : '');
+    const recent = getRecentResults(c);
+    const recentStr = recent.length > 0 ? '\nRECENT 2025-26 ADMITS: ' + recent.join('; ') : '';
+    return '---\nNAME: ' + c.name + ' (' + c.full_name + ')\nTIER: ' + c.tier + '\nAVAILABILITY: ' + availStr + recentStr + '\n' + c.bio;
+  }).join('\n\n');
+
+  const prompt = `You are an expert at matching college counseling leads with the right strategist at Crimson Education.
+
+Lead profile:
+${leadSummary}
+
+Available strategists:
+${counselorContext}
+
+Note: Strategists marked "Limited" availability should still be considered if they are the best fit, but acknowledge the constraint. Only strategists with "Yes" or "Limited" availability are included.
+
+IMPORTANT: Each strategist has a "RECENT 2025-26 ADMITS" field showing their actual results this cycle. Results marked with ★ are Ivy League/MIT/Stanford admits. Weight these heavily when matching — a counselor with recent admits to the student's target schools is a stronger match than bio alone suggests.
+
+Identify the TOP 3-5 best strategist matches. Consider: subject/major specialization, target school track record, student personality fit, timezone compatibility, tier, unique background alignment.
+
+Respond ONLY with a JSON array, no other text:
+[
+  {
+    "rank": 1,
+    "name": "First name only",
+    "full_name": "Full name",
+    "tier": "Exact tier string",
+    "availability_status": "Yes or Limited",
+    "availability_notes": "any notes from the sheet, or empty string",
+    "match_score": "Strong / Good / Solid",
+    "rationale": "2-3 sentences explaining why this strategist fits this specific student. Reference specifics from both profiles.",
+    "strengths": ["3-5 short tags e.g. 'STEM specialist', 'Ivy track record', 'Research mentorship'"]
+  }
+]`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error?.message || 'API error');
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const matches = JSON.parse(text.replace(/```json|```/g, '').trim());
+    setLoading(false);
+    showResults(matches);
+  } catch(e) {
+    setLoading(false);
+    showError('Something went wrong: ' + e.message);
+  }
+}
+
+// ── UI helpers ───────────────────────────────────────────────────────────────
+function setLoading(on) {
+  document.getElementById('formSection').style.display = on ? 'none' : 'block';
+  document.getElementById('loadingState').classList.toggle('visible', on);
+  document.getElementById('resultsSection').classList.remove('visible');
+}
+
+function showResults(matches) {
+  const container = document.getElementById('matchCards');
+  container.innerHTML = '';
+  matches.forEach(m => {
+    const tier = m.tier || '';
+    let tierClass = 'standard';
+    if (tier.includes('PLATINUM')) tierClass = 'platinum';
+    else if (tier.includes('SENIOR+')) tierClass = 'seniorplus';
+    else if (tier.includes('SENIOR')) tierClass = 'senior';
+    const tierLabel = tier.replace(' STRATEGIST', '').trim();
+
+    const availStatus = (m.availability_status || 'Yes').toLowerCase();
+    const availNotes = m.availability_notes || '';
+    let availHtml = '';
+    if (availStatus === 'limited') {
+      availHtml = `<span class="avail-pill limited">Limited availability</span>`;
+      if (availNotes) availHtml += `<span class="avail-notes">${availNotes}</span>`;
+    } else if (availStatus === 'yes') {
+      availHtml = `<span class="avail-pill yes">Available</span>`;
+      if (availNotes) availHtml += `<span class="avail-notes">${availNotes}</span>`;
+    }
+
+    const strengths = (m.strengths || []).map(s => `<span class="strength-tag">${s}</span>`).join('');
+    const card = document.createElement('div');
+    card.className = `match-card rank-${m.rank}`;
+    card.innerHTML = `
+      <div class="match-top">
+        <div class="rank-badge">${m.rank}</div>
+        <div class="match-info">
+          <div class="match-name">${m.name}</div>
+          <div class="match-meta">
+            <span class="tier-badge ${tierClass}">${tierLabel}</span>
+            ${availHtml}
+            <span style="font-size:12px;color:rgba(245,239,230,0.4)">${m.match_score || ''} match</span>
+          </div>
+        </div>
+      </div>
+      <div class="match-rationale">${m.rationale}</div>
+      <div class="match-strengths">${strengths}</div>`;
+    container.appendChild(card);
+  });
+  document.getElementById('resultsSection').classList.add('visible');
+}
+
+function resetForm() {
+  document.getElementById('resultsSection').classList.remove('visible');
+  document.getElementById('formSection').style.display = 'block';
+  document.getElementById('loadingState').classList.remove('visible');
+}
+function showError(msg) { const b = document.getElementById('errorBox'); b.textContent = msg; b.classList.add('visible'); }
+function hideError() { document.getElementById('errorBox').classList.remove('visible'); }
+</script>
+</body>
+</html>
