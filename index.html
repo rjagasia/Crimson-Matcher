@@ -208,13 +208,6 @@ textarea::placeholder,input::placeholder{color:rgba(245,239,230,.3);}
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <h3>Settings</h3>
-    <p>Enter your Anthropic API key to enable matching. Saved in your browser only.</p>
-    <div class="url-input-row">
-      <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
-      <button class="save-btn" onclick="saveApiKey()">Save</button>
-    </div>
-    <div class="save-msg" id="apiKeySaveMsg">&#10003; API key saved.</div>
-    <div class="modal-divider"></div>
     <p>Availability sheet Apps Script URL.</p>
     <div class="url-input-row">
       <input type="text" id="sheetUrlInput" placeholder="https://script.google.com/macros/s/...">
@@ -252,21 +245,12 @@ document.querySelectorAll(".tier-chip").forEach(function(chip) {
   });
 });
 function openSettings() {
-  var savedKey = localStorage.getItem("crimson_api_key") || "";
-  document.getElementById("apiKeyInput").value = savedKey ? "************************" : "";
   document.getElementById("sheetUrlInput").value = sheetUrl;
   document.getElementById("apiKeySaveMsg").style.display = "none";
   document.getElementById("sheetSaveMsg").style.display = "none";
   document.getElementById("settingsModal").classList.add("visible");
 }
 function closeSettings() { document.getElementById("settingsModal").classList.remove("visible"); }
-function saveApiKey() {
-  var key = document.getElementById("apiKeyInput").value.trim();
-  if (!key || key.indexOf("*") !== -1) return;
-  localStorage.setItem("crimson_api_key", key);
-  document.getElementById("apiKeySaveMsg").style.display = "block";
-  setTimeout(function() { document.getElementById("apiKeySaveMsg").style.display = "none"; }, 2000);
-}
 function saveSheetUrl() {
   var url = document.getElementById("sheetUrlInput").value.trim();
   if (!url) return;
@@ -374,8 +358,6 @@ async function findMatches() {
   var timezone = document.getElementById("timezone").value;
   var focus = document.getElementById("focus").value.trim();
   if (!notes && !focus) { showError("Please describe the lead or paste their profile notes."); return; }
-  var apiKey = localStorage.getItem("crimson_api_key");
-  if (!apiKey) { showError("No API key set. Click Settings and enter your Anthropic API key."); openSettings(); return; }
   var filtered = COUNSELORS.filter(function(c) {
     var t = c.tier;
     var tierOk = (t.indexOf("PLATINUM") !== -1 && activeTiers.has("PLATINUM")) ||
@@ -405,14 +387,9 @@ async function findMatches() {
   }).join("\n\n");
   var prompt = "You are an expert at matching college counseling leads with the right strategist at Crimson Education.\n\nLead profile:\n" + leadSummary + "\n\nAvailable strategists:\n" + counselorContext + "\n\nNote: Strategists marked Limited availability should still be considered if they are the best fit.\n\nIMPORTANT: Weight RECENT 2025-26 ADMITS heavily. Results marked with a star are Ivy/MIT/Stanford admits.\n\nIdentify the TOP 3-5 best matches. Respond ONLY with a valid JSON array:\n[{\"rank\":1,\"name\":\"First name\",\"full_name\":\"Full name\",\"tier\":\"Exact tier\",\"availability_status\":\"Yes or Limited\",\"availability_notes\":\"notes or empty\",\"match_score\":\"Strong/Good/Solid\",\"rationale\":\"2-3 sentences\",\"strengths\":[\"tag1\",\"tag2\"]}]";
   try {
-    var resp = await fetch("https://api.anthropic.com/v1/messages", {
+    var resp = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1500, messages: [{ role: "user", content: prompt }] })
     });
     var data = await resp.json();
